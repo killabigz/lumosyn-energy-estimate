@@ -27,6 +27,9 @@ const appliances = [
   "Wi-Fi",
   "Fan",
   "Air Conditioner",
+  "Water Pump",
+  "Freezer",
+  "Other",
 ];
 
 const timelines = [
@@ -141,7 +144,9 @@ export function EstimateFlow() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [activeQuestion, setActiveQuestion] = useState(1);
   const [estimate, setEstimate] = useState<EstimateState>(initialEstimate);
+  const [otherAppliance, setOtherAppliance] = useState("");
   const formattedWhatsApp = formatJamaicanNumber(estimate.whatsapp);
+  const isOtherApplianceSelected = estimate.appliances.includes("Other");
 
   const canContinue = useMemo(() => {
     if (activeQuestion === 1) {
@@ -313,6 +318,22 @@ export function EstimateFlow() {
                   />
                 ))}
               </div>
+              {isOtherApplianceSelected && (
+                <div className="grid gap-2">
+                  <FieldLabel htmlFor="other-appliance">
+                    Tell us what else you want to run
+                  </FieldLabel>
+                  <input
+                    className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
+                    id="other-appliance"
+                    onChange={(event) =>
+                      setOtherAppliance(event.target.value)
+                    }
+                    type="text"
+                    value={otherAppliance}
+                  />
+                </div>
+              )}
             </div>
           )}
 

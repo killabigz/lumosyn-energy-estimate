@@ -1,7 +1,7 @@
 import type { RecommendationDataset } from "./types";
 
 const defaultDisclaimer =
-  "Remember: This is a starting point designed to help you understand your options. Every home is different, and your final system may change after discussing your goals.";
+  "Remember: This is a starting point designed to help you understand your options. Every home is different, and your equipment may change after discussing your goals.";
 
 export const recommendationConfig = {
   version: "module-5-v1",
@@ -73,6 +73,18 @@ export const recommendationConfig = {
         id: "air_conditioner",
         labels: ["air_conditioner", "Air Conditioner", "AC"],
       },
+      {
+        id: "water_pump",
+        labels: ["water_pump", "Water Pump"],
+      },
+      {
+        id: "freezer",
+        labels: ["freezer", "Freezer"],
+      },
+      {
+        id: "other",
+        labels: ["other", "Other"],
+      },
     ],
     timelines: [
       {
@@ -98,6 +110,16 @@ export const recommendationConfig = {
   },
   applianceProfiles: [
     {
+      id: "water_pump_included",
+      requiredAppliances: ["water_pump"],
+      priority: 80,
+    },
+    {
+      id: "other_selected",
+      requiredAppliances: ["other"],
+      priority: 70,
+    },
+    {
       id: "air_conditioner_included",
       requiredAppliances: ["air_conditioner"],
       priority: 60,
@@ -109,10 +131,40 @@ export const recommendationConfig = {
       priority: 50,
     },
     {
+      id: "lights_tv_wifi_refrigerator",
+      requiredAppliances: ["lights", "tv", "wifi", "freezer"],
+      excludedAppliances: ["air_conditioner"],
+      priority: 50,
+    },
+    {
+      id: "refrigeration_load",
+      requiredAppliances: ["refrigerator", "freezer"],
+      excludedAppliances: ["air_conditioner"],
+      priority: 45,
+    },
+    {
       id: "refrigerator_fan",
       requiredAppliances: ["refrigerator", "fan"],
       excludedAppliances: ["air_conditioner"],
       priority: 40,
+    },
+    {
+      id: "refrigerator_fan",
+      requiredAppliances: ["freezer", "fan"],
+      excludedAppliances: ["air_conditioner"],
+      priority: 40,
+    },
+    {
+      id: "refrigeration_load",
+      requiredAppliances: ["refrigerator"],
+      excludedAppliances: ["air_conditioner"],
+      priority: 35,
+    },
+    {
+      id: "refrigeration_load",
+      requiredAppliances: ["freezer"],
+      excludedAppliances: ["air_conditioner"],
+      priority: 35,
     },
     {
       id: "lights_tv_wifi",
@@ -163,7 +215,7 @@ export const recommendationConfig = {
       title: "Safe beginner starting point",
       systemSizeLabel: "Small essentials-first starter system",
       batteryLabel: "Small battery reserve for lights and phone charging",
-      inverterLabel: "Small pure sine wave inverter placeholder",
+      inverterLabel: "Entry-level pure sine wave inverter starting range",
       solarPanelLabel: "Optional starter solar panel allowance",
       shortExplanation:
         "This keeps the recommendation conservative when the answers are unsure or do not match a more specific configuration.",
@@ -182,12 +234,12 @@ export const recommendationConfig = {
       title: "Beginner planning recommendation",
       systemSizeLabel: "Entry-level planning range",
       batteryLabel: "Small battery reserve for basic essentials",
-      inverterLabel: "Small inverter placeholder",
+      inverterLabel: "Entry-level inverter starting range",
       solarPanelLabel: "Starter panel allowance after load review",
       shortExplanation:
         "Because the goal or budget is unsure, this starts with a modest essentials package instead of assuming a larger design.",
       practicalStartingPoint:
-        "Use this as a conversation starter and narrow the goal before sizing the final system.",
+        "Use this as a conversation starter and narrow the goal before confirming system details.",
       disclaimer: defaultDisclaimer,
       match: {
         goal: "unsure",
@@ -195,6 +247,236 @@ export const recommendationConfig = {
         budget: "any",
       },
       conservativeRank: 2,
+    },
+    {
+      recommendationId: "water-pump-under-250k",
+      title: "Water pump load review starter",
+      systemSizeLabel: "Budget-limited pump-capable starting range",
+      batteryLabel: "Battery reserve to be confirmed after pump load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after pump load review",
+      shortExplanation:
+        "Water pumps can have startup surge, so final sizing must be confirmed after load review while staying within the selected budget.",
+      practicalStartingPoint:
+        "Confirm pump horsepower, startup load, and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "water_pump_included",
+        budget: "under_250k",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "water-pump-250k-500k",
+      title: "Water pump load review starter",
+      systemSizeLabel: "Pump-capable starting range",
+      batteryLabel: "Battery reserve to be confirmed after pump load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after pump load review",
+      shortExplanation:
+        "Water pumps can have startup surge, so final sizing must be confirmed after load review before equipment is selected.",
+      practicalStartingPoint:
+        "Confirm pump horsepower, startup load, and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "water_pump_included",
+        budget: "250k_500k",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "water-pump-500k-1m",
+      title: "Water pump load review starter",
+      systemSizeLabel: "Pump-capable starting range",
+      batteryLabel: "Battery reserve to be confirmed after pump load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after pump load review",
+      shortExplanation:
+        "Water pumps can have startup surge, so final sizing must be confirmed after load review before equipment is selected.",
+      practicalStartingPoint:
+        "Confirm pump horsepower, startup load, and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "water_pump_included",
+        budget: "500k_1m",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "water-pump-over-1m",
+      title: "Water pump load review starter",
+      systemSizeLabel: "Pump-capable planning range",
+      batteryLabel: "Battery reserve to be confirmed after pump load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after pump load review",
+      shortExplanation:
+        "A higher budget can support a broader review, but the pump load still must be confirmed before final sizing.",
+      practicalStartingPoint:
+        "Confirm pump horsepower, startup load, and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "water_pump_included",
+        budget: "over_1m",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "water-pump-unsure-budget",
+      title: "Water pump load review starter",
+      systemSizeLabel: "Pump-capable planning range",
+      batteryLabel: "Battery reserve to be confirmed after pump load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after pump load review",
+      shortExplanation:
+        "With a water pump and an unsure budget, the safest starting point is a load review before choosing a system range.",
+      practicalStartingPoint:
+        "Confirm pump horsepower, startup load, runtime, and budget before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "water_pump_included",
+        budget: "unsure",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "other-load-under-250k",
+      title: "Unlisted appliance load review starter",
+      systemSizeLabel: "Budget-limited conservative starting point",
+      batteryLabel: "Battery reserve to be confirmed after load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "Because an unlisted appliance was selected, final sizing must be confirmed after load review instead of assuming a larger setup.",
+      practicalStartingPoint:
+        "Identify the appliance wattage and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "other_selected",
+        budget: "under_250k",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "other-load-250k-500k",
+      title: "Unlisted appliance load review starter",
+      systemSizeLabel: "Conservative starting point",
+      batteryLabel: "Battery reserve to be confirmed after load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "Because an unlisted appliance was selected, final sizing must be confirmed after load review instead of assuming a larger setup.",
+      practicalStartingPoint:
+        "Identify the appliance wattage and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "other_selected",
+        budget: "250k_500k",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "other-load-500k-1m",
+      title: "Unlisted appliance load review starter",
+      systemSizeLabel: "Conservative starting point",
+      batteryLabel: "Battery reserve to be confirmed after load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "Because an unlisted appliance was selected, final sizing must be confirmed after load review instead of assuming a larger setup.",
+      practicalStartingPoint:
+        "Identify the appliance wattage and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "other_selected",
+        budget: "500k_1m",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "other-load-over-1m",
+      title: "Unlisted appliance load review starter",
+      systemSizeLabel: "Conservative planning starting range",
+      batteryLabel: "Battery reserve to be confirmed after load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "A higher budget can support a broader review, but the unlisted appliance still must be confirmed before final sizing.",
+      practicalStartingPoint:
+        "Identify the appliance wattage and runtime before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "other_selected",
+        budget: "over_1m",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "other-load-unsure-budget",
+      title: "Unlisted appliance load review starter",
+      systemSizeLabel: "Conservative planning starting range",
+      batteryLabel: "Battery reserve to be confirmed after load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "With an unlisted appliance and an unsure budget, the safest starting point is a load review before choosing a system range.",
+      practicalStartingPoint:
+        "Identify the appliance wattage, runtime, and budget before final sizing.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "other_selected",
+        budget: "unsure",
+      },
+      conservativeRank: 1,
+    },
+    {
+      recommendationId: "refrigeration-load-under-250k",
+      title: "Conservative refrigeration backup starting point",
+      systemSizeLabel: "Budget-limited refrigeration backup starting range",
+      batteryLabel:
+        "Small battery reserve to be confirmed after refrigeration load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Starter panel allowance after load review",
+      shortExplanation:
+        "A freezer or refrigerator is a refrigeration load, so this starts conservatively and requires load review before final sizing.",
+      practicalStartingPoint:
+        "Confirm appliance type, wattage, startup load, and target runtime.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "refrigeration_load",
+        budget: "under_250k",
+      },
+      conservativeRank: 3,
+    },
+    {
+      recommendationId: "refrigeration-load-review",
+      title: "Refrigeration load review starting range",
+      systemSizeLabel: "Refrigeration backup starting range",
+      batteryLabel:
+        "Battery reserve to be confirmed after refrigeration load review",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
+      solarPanelLabel: "Panel allowance to be confirmed after load review",
+      shortExplanation:
+        "A freezer or refrigerator is a refrigeration load, so the starting range stays conservative until the actual appliance load is reviewed.",
+      practicalStartingPoint:
+        "Confirm appliance type, wattage, startup load, and target runtime.",
+      disclaimer: defaultDisclaimer,
+      match: {
+        goal: "any",
+        applianceProfile: "refrigeration_load",
+        budget: "any",
+      },
+      conservativeRank: 4,
     },
     {
       recommendationId: "blackout-basic-under-250k",
@@ -239,7 +521,7 @@ export const recommendationConfig = {
       title: "Essentials blackout backup starter",
       systemSizeLabel: "Lights, TV, and Wi-Fi backup starter",
       batteryLabel: "Modest battery reserve for short outages",
-      inverterLabel: "Small-to-mid inverter placeholder",
+      inverterLabel: "Small-to-mid inverter starting range",
       solarPanelLabel: "Small panel allowance for daytime recovery",
       shortExplanation:
         "The requested loads are still essential loads, so this stays smaller than a whole-home recommendation.",
@@ -255,10 +537,10 @@ export const recommendationConfig = {
     },
     {
       recommendationId: "blackout-fridge-500k-1m",
-      title: "Refrigerator-capable blackout starter",
-      systemSizeLabel: "Essentials plus refrigerator backup range",
+      title: "Refrigeration-capable blackout starter",
+      systemSizeLabel: "Essentials plus refrigeration backup range",
       batteryLabel: "Moderate battery reserve for essentials and refrigeration",
-      inverterLabel: "Mid-size inverter placeholder",
+      inverterLabel: "Mid-size inverter starting range",
       solarPanelLabel: "Moderate panel allowance for daily recharge",
       shortExplanation:
         "Adding refrigeration raises the starting point, but this remains an essentials backup recommendation.",
@@ -274,10 +556,10 @@ export const recommendationConfig = {
     },
     {
       recommendationId: "blackout-refrigerator-fan-500k-1m",
-      title: "Refrigerator and fan backup starter",
-      systemSizeLabel: "Refrigerator plus fan backup range",
+      title: "Refrigeration and fan backup starter",
+      systemSizeLabel: "Refrigeration plus fan backup range",
       batteryLabel: "Moderate battery reserve for cooling essentials",
-      inverterLabel: "Mid-size inverter placeholder",
+      inverterLabel: "Mid-size inverter starting range",
       solarPanelLabel: "Moderate panel allowance after load review",
       shortExplanation:
         "The selected appliances suggest preserving refrigeration and airflow during outages without moving to a whole-home design.",
@@ -296,7 +578,7 @@ export const recommendationConfig = {
       title: "AC noted, essentials backup first",
       systemSizeLabel: "Budget-limited essentials backup",
       batteryLabel: "Small-to-modest battery reserve for non-AC essentials",
-      inverterLabel: "Essentials inverter placeholder",
+      inverterLabel: "Essentials inverter capacity to be confirmed after load review",
       solarPanelLabel: "Starter panel allowance after load review",
       shortExplanation:
         "Air conditioning is a large load, so the budget-limited starting point keeps the recommendation focused on essentials.",
@@ -315,7 +597,7 @@ export const recommendationConfig = {
       title: "AC-aware blackout planning range",
       systemSizeLabel: "Larger backup planning range",
       batteryLabel: "Larger battery reserve to be engineered",
-      inverterLabel: "Larger inverter placeholder after load study",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
       solarPanelLabel: "Expanded panel allowance after roof review",
       shortExplanation:
         "Because air conditioning is included and the budget is higher, this flags a larger engineered review while staying non-final.",
@@ -334,7 +616,7 @@ export const recommendationConfig = {
       title: "Small bill-reduction starter",
       systemSizeLabel: "Small solar-first starter range",
       batteryLabel: "Battery optional after usage review",
-      inverterLabel: "Small inverter placeholder",
+      inverterLabel: "Entry-level inverter starting range",
       solarPanelLabel: "Small panel allowance for daytime offset",
       shortExplanation:
         "The goal is lowering the bill, so this starts with a modest solar offset instead of backup-heavy sizing.",
@@ -353,7 +635,7 @@ export const recommendationConfig = {
       title: "Budget bill-reduction planning starter",
       systemSizeLabel: "Very small solar offset starter",
       batteryLabel: "No battery assumed at this starting point",
-      inverterLabel: "Small inverter placeholder",
+      inverterLabel: "Entry-level inverter starting range",
       solarPanelLabel: "Minimal panel allowance after bill review",
       shortExplanation:
         "With a bill-reduction goal and a low budget, the conservative starting point is a small solar offset conversation.",
@@ -369,10 +651,10 @@ export const recommendationConfig = {
     },
     {
       recommendationId: "bill-fridge-500k-1m",
-      title: "Practical bill-reduction starter",
+      title: "Practical refrigeration bill-reduction starter",
       systemSizeLabel: "Moderate solar offset range",
       batteryLabel: "Battery optional depending on outage needs",
-      inverterLabel: "Mid-size inverter placeholder",
+      inverterLabel: "Mid-size inverter starting range",
       solarPanelLabel: "Moderate panel allowance for daily offset",
       shortExplanation:
         "This is a solar-offset starting point for a home that includes refrigeration among its important loads.",
@@ -391,7 +673,7 @@ export const recommendationConfig = {
       title: "AC noted, bill review first",
       systemSizeLabel: "Budget-limited solar offset starter",
       batteryLabel: "No AC battery backup assumed",
-      inverterLabel: "Small-to-mid inverter placeholder",
+      inverterLabel: "Small-to-mid inverter starting range",
       solarPanelLabel: "Starter panel allowance after bill review",
       shortExplanation:
         "Air conditioning affects energy use, but the budget-limited recommendation starts with bill analysis instead of assuming a large system.",
@@ -410,7 +692,7 @@ export const recommendationConfig = {
       title: "AC-aware solar offset planning range",
       systemSizeLabel: "Larger solar offset planning range",
       batteryLabel: "Battery optional after bill and outage review",
-      inverterLabel: "Larger inverter placeholder after load study",
+      inverterLabel: "Inverter capacity to be confirmed after load review",
       solarPanelLabel: "Expanded panel allowance after roof review",
       shortExplanation:
         "With air conditioning and a higher budget, the next step is a careful bill and load review before final sizing.",
@@ -429,7 +711,7 @@ export const recommendationConfig = {
       title: "Basic hybrid-style starter",
       systemSizeLabel: "Small hybrid-ready essentials range",
       batteryLabel: "Small battery reserve for essentials",
-      inverterLabel: "Small hybrid inverter placeholder",
+      inverterLabel: "Entry-level hybrid inverter starting range",
       solarPanelLabel: "Small panel allowance for recharge and offset",
       shortExplanation:
         "The goal is both backup and bill reduction, so this starts with a hybrid-style essentials package.",
@@ -445,10 +727,10 @@ export const recommendationConfig = {
     },
     {
       recommendationId: "hybrid-fridge-500k-1m",
-      title: "Practical hybrid-style starting point",
-      systemSizeLabel: "Essentials plus refrigerator hybrid range",
+      title: "Practical refrigeration hybrid starting point",
+      systemSizeLabel: "Essentials plus refrigeration hybrid range",
       batteryLabel: "Moderate battery reserve for essentials and refrigeration",
-      inverterLabel: "Mid-size hybrid inverter placeholder",
+      inverterLabel: "Mid-size hybrid inverter starting range",
       solarPanelLabel: "Moderate panel allowance for recharge and bill offset",
       shortExplanation:
         "The answers point to both outage backup and bill reduction with refrigeration included, so this is a practical hybrid-style starting point.",
@@ -465,9 +747,9 @@ export const recommendationConfig = {
     {
       recommendationId: "hybrid-refrigerator-fan-500k-1m",
       title: "Cooling essentials hybrid starter",
-      systemSizeLabel: "Refrigerator plus fan hybrid range",
+      systemSizeLabel: "Refrigeration plus fan hybrid range",
       batteryLabel: "Moderate battery reserve for cooling essentials",
-      inverterLabel: "Mid-size hybrid inverter placeholder",
+      inverterLabel: "Mid-size hybrid inverter starting range",
       solarPanelLabel: "Moderate panel allowance for recharge and offset",
       shortExplanation:
         "This balances backup and bill reduction for refrigeration and fan loads without assuming whole-home coverage.",
@@ -486,7 +768,7 @@ export const recommendationConfig = {
       title: "AC noted, hybrid essentials first",
       systemSizeLabel: "Budget-limited hybrid essentials range",
       batteryLabel: "Small-to-modest battery reserve for non-AC essentials",
-      inverterLabel: "Essentials hybrid inverter placeholder",
+      inverterLabel: "Essentials hybrid inverter capacity to be confirmed after load review",
       solarPanelLabel: "Starter panel allowance for recharge and offset",
       shortExplanation:
         "Air conditioning is not automatically included in the starting design because the budget calls for a conservative essentials-first recommendation.",
@@ -505,7 +787,7 @@ export const recommendationConfig = {
       title: "AC-aware hybrid planning range",
       systemSizeLabel: "Larger hybrid planning range",
       batteryLabel: "Larger battery reserve to be engineered",
-      inverterLabel: "Larger hybrid inverter placeholder after load study",
+      inverterLabel: "Hybrid inverter capacity to be confirmed after load review",
       solarPanelLabel: "Expanded panel allowance after roof review",
       shortExplanation:
         "The higher budget and AC load justify an engineered review, but this remains a non-final planning recommendation.",
@@ -524,7 +806,7 @@ export const recommendationConfig = {
       title: "Hybrid planning conversation starter",
       systemSizeLabel: "Essentials hybrid planning range",
       batteryLabel: "Battery reserve to be narrowed after budget review",
-      inverterLabel: "Hybrid inverter placeholder",
+      inverterLabel: "Hybrid inverter starting range to be confirmed after load review",
       solarPanelLabel: "Panel allowance to be confirmed",
       shortExplanation:
         "The goal is both backup and bill reduction, but the budget is unsure, so the recommendation stays broad and conservative.",

@@ -23,7 +23,7 @@ type RecommendationVerificationResult = RecommendationVerificationCase & {
 };
 
 const tieDisclaimer =
-  "Remember: This is a starting point designed to help you understand your options. Every home is different, and your final system may change after discussing your goals.";
+  "Remember: This is a starting point designed to help you understand your options. Every home is different, and your equipment may change after discussing your goals.";
 
 const verificationCases: readonly RecommendationVerificationCase[] = [
   {
@@ -66,15 +66,75 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
     },
     expectedRecommendationId: "safe-beginner-unsure",
   },
+  {
+    name: "freezer selected returns refrigeration load review",
+    answers: {
+      goal: "Both",
+      budget: "JMD $500,000-1,000,000",
+      appliances: ["Freezer"],
+      timeline: "Within 3 months",
+    },
+    expectedRecommendationId: "refrigeration-load-review",
+  },
+  {
+    name: "water pump selected returns pump load review",
+    answers: {
+      goal: "Both",
+      budget: "JMD $500,000-1,000,000",
+      appliances: ["Water Pump"],
+      timeline: "Within 6 months",
+    },
+    expectedRecommendationId: "water-pump-500k-1m",
+  },
+  {
+    name: "other selected returns conservative load review",
+    answers: {
+      goal: "Lower my electricity bill",
+      budget: "JMD $250,000-500,000",
+      appliances: ["Other"],
+      timeline: "Just exploring",
+    },
+    expectedRecommendationId: "other-load-250k-500k",
+  },
+  {
+    name: "water pump plus low budget stays budget-limited",
+    answers: {
+      goal: "Keep my home running during blackouts",
+      budget: "Under JMD $250,000",
+      appliances: ["Water Pump"],
+      timeline: "As soon as possible",
+    },
+    expectedRecommendationId: "water-pump-under-250k",
+  },
+  {
+    name: "freezer plus refrigerator returns refrigeration load review",
+    answers: {
+      goal: "Keep my home running during blackouts",
+      budget: "JMD $500,000-1,000,000",
+      appliances: ["Freezer", "Refrigerator"],
+      timeline: "Within 6 months",
+    },
+    expectedRecommendationId: "refrigeration-load-review",
+  },
+  {
+    name: "unknown answers with other still return config recommendation",
+    answers: {
+      goal: "Unexpected goal",
+      budget: "Unexpected budget",
+      appliances: ["Other", "Unexpected appliance"],
+      timeline: "Unexpected timeline",
+    },
+    expectedRecommendationId: "other-load-unsure-budget",
+  },
 ];
 
 const tieLowerRecommendation: RecommendationConfigEntry = {
   recommendationId: "tie-lower-conservative",
   title: "Tie lower conservative option",
   systemSizeLabel: "Lower tied starter",
-  batteryLabel: "Lower tied battery placeholder",
-  inverterLabel: "Lower tied inverter placeholder",
-  solarPanelLabel: "Lower tied panel placeholder",
+  batteryLabel: "Lower tied battery starting range",
+  inverterLabel: "Lower tied inverter starting range",
+  solarPanelLabel: "Lower tied panel allowance",
   shortExplanation: "Used only to verify conservative tie-breaking.",
   practicalStartingPoint: "Choose this when match scores are otherwise equal.",
   disclaimer: tieDisclaimer,
@@ -90,9 +150,9 @@ const tieHigherRecommendation: RecommendationConfigEntry = {
   recommendationId: "tie-higher-less-conservative",
   title: "Tie higher less conservative option",
   systemSizeLabel: "Higher tied starter",
-  batteryLabel: "Higher tied battery placeholder",
-  inverterLabel: "Higher tied inverter placeholder",
-  solarPanelLabel: "Higher tied panel placeholder",
+  batteryLabel: "Higher tied battery starting range",
+  inverterLabel: "Higher tied inverter starting range",
+  solarPanelLabel: "Higher tied panel allowance",
   shortExplanation: "Used only to verify conservative tie-breaking.",
   practicalStartingPoint: "This should lose when match scores are equal.",
   disclaimer: tieDisclaimer,
@@ -145,6 +205,19 @@ export function runRecommendationEngineVerification() {
     appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
     timeline: "Just exploring",
   });
+  const contactFieldRecommendation = getRecommendation({
+    goal: "Both",
+    budget: "JMD $500,000-1,000,000",
+    appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
+    timeline: "As soon as possible",
+    name: "Sample Customer",
+    phone: "+1 (876) 555-0100",
+    email: "sample@example.com",
+  } as RecommendationAnswers & {
+    name: string;
+    phone: string;
+    email: string;
+  });
   const tieRecommendation = getRecommendation(
     {
       goal: "Keep my home running during blackouts",
@@ -157,6 +230,9 @@ export function runRecommendationEngineVerification() {
   const timelineIsTechnicalNoOp =
     timelineSoonRecommendation.recommendationId ===
     timelineExploringRecommendation.recommendationId;
+  const contactFieldsAreTechnicalNoOp =
+    timelineSoonRecommendation.recommendationId ===
+    contactFieldRecommendation.recommendationId;
   const tieBreakerChoosesLower =
     tieRecommendation.recommendationId ===
     tieLowerRecommendation.recommendationId;
@@ -165,6 +241,7 @@ export function runRecommendationEngineVerification() {
   if (
     failedResults.length > 0 ||
     !timelineIsTechnicalNoOp ||
+    !contactFieldsAreTechnicalNoOp ||
     !tieBreakerChoosesLower
   ) {
     throw new Error(
@@ -176,6 +253,9 @@ export function runRecommendationEngineVerification() {
         timelineIsTechnicalNoOp
           ? undefined
           : "timeline no-op check failed: technical recommendation changed",
+        contactFieldsAreTechnicalNoOp
+          ? undefined
+          : "contact no-op check failed: technical recommendation changed",
         tieBreakerChoosesLower
           ? undefined
           : "tie-breaker check failed: lower conservative recommendation did not win",
@@ -188,6 +268,7 @@ export function runRecommendationEngineVerification() {
   return {
     cases: results,
     timelineIsTechnicalNoOp,
+    contactFieldsAreTechnicalNoOp,
     tieBreakerChoosesLower,
     journeyStageExamples: {
       asap: mapTimelineToJourneyStage("As soon as possible"),

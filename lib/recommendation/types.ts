@@ -17,7 +17,10 @@ export type EstimateApplianceId =
   | "wifi"
   | "refrigerator"
   | "fan"
-  | "air_conditioner";
+  | "air_conditioner"
+  | "water_pump"
+  | "freezer"
+  | "other";
 
 export type EstimateTimelineId =
   | "asap"
@@ -34,6 +37,9 @@ export type ApplianceProfileId =
   | "lights_tv_wifi_refrigerator"
   | "refrigerator_fan"
   | "air_conditioner_included"
+  | "refrigeration_load"
+  | "water_pump_included"
+  | "other_selected"
   | "unsure";
 
 export type MatchValue<T extends string> = T | "any";

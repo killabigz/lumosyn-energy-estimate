@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RecommendationResult } from "@/components/estimate/RecommendationResult";
 import { EstimateProgress } from "@/components/ui/EstimateProgress";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { getRecommendation, type Recommendation } from "@/lib/recommendation";
 
 const goals = [
   "Keep my home running during blackouts",
@@ -145,8 +147,12 @@ export function EstimateFlow() {
   const [activeQuestion, setActiveQuestion] = useState(1);
   const [estimate, setEstimate] = useState<EstimateState>(initialEstimate);
   const [otherAppliance, setOtherAppliance] = useState("");
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(
+    null,
+  );
   const formattedWhatsApp = formatJamaicanNumber(estimate.whatsapp);
   const isOtherApplianceSelected = estimate.appliances.includes("Other");
+  const isShowingResult = recommendation !== null;
 
   const canContinue = useMemo(() => {
     if (activeQuestion === 1) {
@@ -187,7 +193,7 @@ export function EstimateFlow() {
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [activeQuestion]);
+  }, [activeQuestion, isShowingResult]);
 
   function updateField(field: FieldName, value: string) {
     setEstimate((current) => ({
@@ -227,13 +233,31 @@ export function EstimateFlow() {
     setActiveQuestion((current) => Math.max(1, current - 1));
   }
 
+  function startOver() {
+    setEstimate(initialEstimate);
+    setOtherAppliance("");
+    setRecommendation(null);
+    setActiveQuestion(1);
+  }
+
+  function backHome() {
+    router.push("/");
+  }
+
   function continueFlow() {
     if (!canContinue) {
       return;
     }
 
     if (activeQuestion === totalQuestions) {
-      router.push("/estimate/confirmation");
+      setRecommendation(
+        getRecommendation({
+          goal: estimate.goal,
+          budget: estimate.budget,
+          appliances: estimate.appliances,
+          timeline: estimate.timeline,
+        }),
+      );
       return;
     }
 
@@ -246,191 +270,217 @@ export function EstimateFlow() {
       className="estimate-stage grid min-h-[calc(100dvh-73px)] w-full content-center px-5 py-8 sm:px-6 sm:py-12 lg:px-8"
     >
       <div
-        className="estimate-panel motion-fade-up mx-auto grid w-full max-w-3xl gap-8 rounded-card border border-border bg-surface p-5 shadow-card sm:p-8"
+        className={`estimate-panel motion-fade-up mx-auto grid w-full gap-8 rounded-card border border-border bg-surface p-5 shadow-card sm:p-8 ${
+          isShowingResult ? "max-w-4xl" : "max-w-3xl"
+        }`}
         ref={panelRef}
       >
-        <EstimateProgress current={activeQuestion} total={totalQuestions} />
+        {recommendation ? (
+          <RecommendationResult
+            headingRef={headingRef}
+            name={estimate.name}
+            onBackHome={backHome}
+            onStartOver={startOver}
+            recommendation={recommendation}
+          />
+        ) : (
+          <>
+            <EstimateProgress current={activeQuestion} total={totalQuestions} />
 
-        <div className="grid gap-6">
-          {activeQuestion === 1 && (
-            <div className="grid gap-5">
-              <h1
-                className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                id="estimate-heading"
-                ref={headingRef}
-                tabIndex={-1}
-              >
-                What would you like solar to help you with?
-              </h1>
-              <div className="grid gap-3">
-                {goals.map((goal) => (
-                  <ChoiceButton
-                    isSelected={estimate.goal === goal}
-                    key={goal}
-                    label={goal}
-                    onClick={() => chooseSingle("goal", goal)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+            <div className="grid gap-6">
+              {activeQuestion === 1 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    What would you like solar to help you with?
+                  </h1>
+                  <div className="grid gap-3">
+                    {goals.map((goal) => (
+                      <ChoiceButton
+                        isSelected={estimate.goal === goal}
+                        key={goal}
+                        label={goal}
+                        onClick={() => chooseSingle("goal", goal)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {activeQuestion === 2 && (
-            <div className="grid gap-5">
-              <h1
-                className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                id="estimate-heading"
-                ref={headingRef}
-                tabIndex={-1}
-              >
-                What&apos;s your estimated budget?
-              </h1>
-              <div className="grid gap-3">
-                {budgets.map((budget) => (
-                  <ChoiceButton
-                    isSelected={estimate.budget === budget}
-                    key={budget}
-                    label={budget}
-                    onClick={() => chooseSingle("budget", budget)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+              {activeQuestion === 2 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    What&apos;s your estimated budget?
+                  </h1>
+                  <div className="grid gap-3">
+                    {budgets.map((budget) => (
+                      <ChoiceButton
+                        isSelected={estimate.budget === budget}
+                        key={budget}
+                        label={budget}
+                        onClick={() => chooseSingle("budget", budget)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {activeQuestion === 3 && (
-            <div className="grid gap-5">
-              <h1
-                className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                id="estimate-heading"
-                ref={headingRef}
-                tabIndex={-1}
-              >
-                Which appliances would you like to keep running?
-              </h1>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {appliances.map((appliance) => (
-                  <ChoiceButton
-                    isSelected={estimate.appliances.includes(appliance)}
-                    key={appliance}
-                    label={appliance}
-                    onClick={() => toggleAppliance(appliance)}
-                  />
-                ))}
-              </div>
-              {isOtherApplianceSelected && (
-                <div className="grid gap-2">
-                  <FieldLabel htmlFor="other-appliance">
-                    Tell us what else you want to run
-                  </FieldLabel>
-                  <input
-                    className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
-                    id="other-appliance"
-                    onChange={(event) =>
-                      setOtherAppliance(event.target.value)
-                    }
-                    type="text"
-                    value={otherAppliance}
-                  />
+              {activeQuestion === 3 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    Which appliances would you like to keep running?
+                  </h1>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {appliances.map((appliance) => (
+                      <ChoiceButton
+                        isSelected={estimate.appliances.includes(appliance)}
+                        key={appliance}
+                        label={appliance}
+                        onClick={() => toggleAppliance(appliance)}
+                      />
+                    ))}
+                  </div>
+                  {isOtherApplianceSelected && (
+                    <div className="grid gap-2">
+                      <FieldLabel htmlFor="other-appliance">
+                        Tell us what else you want to run
+                      </FieldLabel>
+                      <input
+                        className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
+                        id="other-appliance"
+                        onChange={(event) =>
+                          setOtherAppliance(event.target.value)
+                        }
+                        type="text"
+                        value={otherAppliance}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeQuestion === 4 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    When are you planning to install?
+                  </h1>
+                  <div className="grid gap-3">
+                    {timelines.map((timeline) => (
+                      <ChoiceButton
+                        isSelected={estimate.timeline === timeline}
+                        key={timeline}
+                        label={timeline}
+                        onClick={() => chooseSingle("timeline", timeline)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeQuestion === 5 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    How can we contact you?
+                  </h1>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <FieldLabel htmlFor="name" isRequired>
+                        What should we call you?
+                      </FieldLabel>
+                      <input
+                        className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
+                        id="name"
+                        onChange={(event) =>
+                          updateField("name", event.target.value)
+                        }
+                        placeholder="Enter your first name"
+                        type="text"
+                        value={estimate.name}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <FieldLabel htmlFor="whatsapp" isRequired>
+                        What&apos;s your WhatsApp number?
+                      </FieldLabel>
+                      <input
+                        className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
+                        id="whatsapp"
+                        inputMode="tel"
+                        onChange={(event) => updateWhatsApp(event.target.value)}
+                        placeholder="Enter your WhatsApp number"
+                        type="tel"
+                        value={formattedWhatsApp}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <FieldLabel htmlFor="email">Email (Optional)</FieldLabel>
+                      <input
+                        className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
+                        id="email"
+                        inputMode="email"
+                        onChange={(event) =>
+                          updateField("email", event.target.value)
+                        }
+                        placeholder="name@example.com"
+                        type="text"
+                        value={estimate.email}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          )}
 
-          {activeQuestion === 4 && (
-            <div className="grid gap-5">
-              <h1
-                className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                id="estimate-heading"
-                ref={headingRef}
-                tabIndex={-1}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              {activeQuestion > 1 && (
+                <PrimaryButton
+                  className="sm:min-w-32"
+                  onClick={goBack}
+                  variant="secondary"
+                >
+                  Back
+                </PrimaryButton>
+              )}
+              <PrimaryButton
+                className={
+                  activeQuestion === 1
+                    ? "sm:ml-auto sm:min-w-40"
+                    : "sm:min-w-40"
+                }
+                disabled={!canContinue}
+                onClick={continueFlow}
               >
-                When are you planning to install?
-              </h1>
-              <div className="grid gap-3">
-                {timelines.map((timeline) => (
-                  <ChoiceButton
-                    isSelected={estimate.timeline === timeline}
-                    key={timeline}
-                    label={timeline}
-                    onClick={() => chooseSingle("timeline", timeline)}
-                  />
-                ))}
-              </div>
+                Continue
+              </PrimaryButton>
             </div>
-          )}
-
-          {activeQuestion === 5 && (
-            <div className="grid gap-5">
-              <h1
-                className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                id="estimate-heading"
-                ref={headingRef}
-                tabIndex={-1}
-              >
-                How can we contact you?
-              </h1>
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <FieldLabel htmlFor="name" isRequired>
-                    What should we call you?
-                  </FieldLabel>
-                  <input
-                    className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
-                    id="name"
-                    onChange={(event) => updateField("name", event.target.value)}
-                    placeholder="Enter your first name"
-                    type="text"
-                    value={estimate.name}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <FieldLabel htmlFor="whatsapp" isRequired>
-                    What&apos;s your WhatsApp number?
-                  </FieldLabel>
-                  <input
-                    className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
-                    id="whatsapp"
-                    inputMode="tel"
-                    onChange={(event) => updateWhatsApp(event.target.value)}
-                    placeholder="Enter your WhatsApp number"
-                    type="tel"
-                    value={formattedWhatsApp}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <FieldLabel htmlFor="email">Email (Optional)</FieldLabel>
-                  <input
-                    className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
-                    id="email"
-                    inputMode="email"
-                    onChange={(event) => updateField("email", event.target.value)}
-                    placeholder="name@example.com"
-                    type="text"
-                    value={estimate.email}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          {activeQuestion > 1 && (
-            <PrimaryButton className="sm:min-w-32" onClick={goBack} variant="secondary">
-              Back
-            </PrimaryButton>
-          )}
-          <PrimaryButton
-            className={activeQuestion === 1 ? "sm:ml-auto sm:min-w-40" : "sm:min-w-40"}
-            disabled={!canContinue}
-            onClick={continueFlow}
-          >
-            Continue
-          </PrimaryButton>
-        </div>
+          </>
+        )}
       </div>
     </section>
   );

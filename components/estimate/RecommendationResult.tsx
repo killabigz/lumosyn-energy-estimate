@@ -1,4 +1,6 @@
-import type { Ref } from "react";
+"use client";
+
+import { useState, type Ref } from "react";
 import { ButtonLink } from "@/components/ui/PrimaryButton";
 import type { Recommendation } from "@/lib/recommendation";
 
@@ -35,6 +37,7 @@ export function RecommendationResult({
   runtime,
   saveStatus,
 }: RecommendationResultProps) {
+  const [isDone, setIsDone] = useState(false);
   const firstName = name.trim();
   const answerDetails = [
     {
@@ -163,19 +166,53 @@ export function RecommendationResult({
           </p>
         </div>
 
-        <div className="grid gap-3 rounded-card border border-growth/40 bg-surface-soft p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div>
+        {isDone ? (
+          <div
+            aria-live="polite"
+            className="grid gap-2 rounded-card border border-growth/40 bg-surface-soft p-4"
+          >
             <h3 className="text-lg font-semibold text-foreground">
-              🌱 Curious why Lumosyn exists?
+              You&rsquo;re all set. 💚
             </h3>
-            <p className="mt-1 text-base leading-7 text-muted">
-              Discover why we&apos;re building simple energy tools for Jamaica.
+            <p className="text-base leading-7 text-muted">
+              Your recommendation is still here.
+            </p>
+            <p className="text-base leading-7 text-muted">
+              Take a screenshot if you want to keep it for later.
+            </p>
+            <p className="text-base leading-7 text-muted">
+              You can close this page whenever you&rsquo;re ready.
             </p>
           </div>
-          <ButtonLink className="sm:w-fit" href="/why-lumosyn-exists">
-            Why Lumosyn Exists →
-          </ButtonLink>
-        </div>
+        ) : (
+          <div className="grid gap-4 rounded-card border border-growth/40 bg-surface-soft p-4">
+            <div className="grid gap-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                💚 Thanks for trusting Lumosyn with your first energy plan.
+              </h3>
+              <p className="text-base leading-7 text-muted">
+                We hope this helped you feel a little more confident about your
+                next energy step.
+              </p>
+              <p className="text-base leading-7 text-muted">
+                If you&rsquo;re curious why we&rsquo;re building Lumosyn,
+                we&rsquo;d love to share our story.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:flex sm:items-center">
+              <ButtonLink className="sm:w-fit" href="/why-lumosyn-exists">
+                Continue →
+              </ButtonLink>
+              <button
+                className="inline-flex min-h-10 w-fit items-center justify-center rounded-card px-1 text-sm font-semibold text-secondary outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                onClick={() => setIsDone(true)}
+                type="button"
+              >
+                No thanks, I&rsquo;m done
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

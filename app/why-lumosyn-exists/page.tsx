@@ -19,8 +19,8 @@ export default function WhyLumosynExistsPage() {
     <>
       <SiteHeader />
       <main>
-        <section className="mx-auto grid min-h-[calc(100dvh-73px)] w-full max-w-4xl content-center px-5 py-14 sm:px-6 sm:py-20 lg:px-8">
-          <div className="motion-fade-up">
+        <section className="estimate-stage min-h-[calc(100dvh-73px)] w-full px-5 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <div className="motion-fade-up relative z-10 mx-auto max-w-4xl">
             <p className="text-sm font-semibold text-accent">
               Lumosyn story
             </p>

@@ -3,7 +3,7 @@ import { ButtonLink } from "@/components/ui/PrimaryButton";
 
 export function LandingHero() {
   return (
-    <section className="mx-auto grid min-h-[calc(100svh-121px)] w-full max-w-3xl content-center px-5 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <section className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div className="motion-fade-up">
         <p className="text-sm font-semibold text-accent">Lumosyn</p>
         <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">

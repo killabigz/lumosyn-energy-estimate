@@ -5,15 +5,17 @@ export {
   normalizeRecommendationAnswers,
 } from "./recommendation-engine";
 export type {
-  ApplianceProfileId,
+  ApplianceLoadGroupId,
   EstimateApplianceId,
   EstimateBudgetId,
   EstimateGoalId,
+  EstimateRuntimeId,
   EstimateTimelineId,
   JourneyStage,
   NormalizedRecommendationAnswers,
   Recommendation,
   RecommendationAnswers,
-  RecommendationConfigEntry,
+  RecommendationBandId,
+  RecommendationBandConfig,
   RecommendationDataset,
 } from "./types";

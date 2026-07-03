@@ -55,20 +55,24 @@ export function RecommendationResult({
   ];
   const startingPointDetails = [
     {
-      label: "System size",
+      label: "Voltage category",
       value: recommendation.systemSizeLabel,
-    },
-    {
-      label: "Battery",
-      value: recommendation.batteryLabel,
     },
     {
       label: "Inverter",
       value: recommendation.inverterLabel,
     },
     {
-      label: "Solar panel",
+      label: "Battery",
+      value: recommendation.batteryLabel,
+    },
+    {
+      label: "Solar panel range",
       value: recommendation.solarPanelLabel,
+    },
+    {
+      label: "Expected backup",
+      value: recommendation.expectedBackupDirection,
     },
   ];
 
@@ -138,7 +142,7 @@ export function RecommendationResult({
           <dl className="overflow-hidden rounded-card border border-border bg-background/70">
             {startingPointDetails.map((detail) => (
               <div
-                className="grid gap-1 border-b border-border px-4 py-3 last:border-b-0 sm:grid-cols-[8rem_1fr] sm:gap-4"
+                className="grid gap-1 border-b border-border px-4 py-3 last:border-b-0 sm:grid-cols-[10rem_1fr] sm:gap-4"
                 key={detail.label}
               >
                 <dt className="text-sm font-semibold text-secondary">
@@ -150,9 +154,17 @@ export function RecommendationResult({
               </div>
             ))}
           </dl>
-          <p className="text-base leading-7 text-muted">
-            {recommendation.shortExplanation}
-          </p>
+          <div className="grid gap-2">
+            <h3 className="text-base font-semibold text-foreground">
+              Why this fits
+            </h3>
+            <p className="text-base leading-7 text-muted">
+              {recommendation.whyThisFits}
+            </p>
+            <p className="text-sm leading-6 text-secondary">
+              {recommendation.disclaimer}
+            </p>
+          </div>
         </section>
       </div>
 

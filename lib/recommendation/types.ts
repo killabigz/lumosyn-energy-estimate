@@ -22,6 +22,12 @@ export type EstimateApplianceId =
   | "freezer"
   | "other";
 
+export type EstimateRuntimeId =
+  | "short_backup"
+  | "medium_backup"
+  | "longer_backup"
+  | "unsure";
+
 export type EstimateTimelineId =
   | "asap"
   | "within_3_months"
@@ -30,31 +36,23 @@ export type EstimateTimelineId =
 
 export type JourneyStage = "Ready" | "Planning" | "Exploring";
 
-export type ApplianceProfileId =
-  | "basic_essentials"
-  | "lights_only"
-  | "lights_tv_wifi"
-  | "lights_tv_wifi_refrigerator"
-  | "refrigerator_fan"
-  | "air_conditioner_included"
-  | "refrigeration_load"
-  | "water_pump_included"
-  | "other_selected"
-  | "unsure";
+export type ApplianceLoadGroupId =
+  | "low_basic"
+  | "cold_storage"
+  | "heavy_surge"
+  | "custom_unknown";
+
+export type RecommendationBandId =
+  | "12v_starter"
+  | "24v_home_essentials"
+  | "48v_larger_backup"
+  | "custom_appliance";
 
 export type MatchValue<T extends string> = T | "any";
 
 export type AnswerOption<T extends string> = {
   id: T;
   labels: readonly string[];
-};
-
-export type ApplianceProfileConfig = {
-  id: ApplianceProfileId;
-  requiredAppliances: readonly EstimateApplianceId[];
-  allowedAppliances?: readonly EstimateApplianceId[];
-  excludedAppliances?: readonly EstimateApplianceId[];
-  priority: number;
 };
 
 export type RecommendationAnswers = {
@@ -69,7 +67,8 @@ export type NormalizedRecommendationAnswers = {
   goal: EstimateGoalId;
   budget: EstimateBudgetId;
   appliances: readonly EstimateApplianceId[];
-  applianceProfile: ApplianceProfileId;
+  applianceGroups: readonly ApplianceLoadGroupId[];
+  runtime: EstimateRuntimeId;
   timeline?: EstimateTimelineId;
 };
 
@@ -80,20 +79,42 @@ export type Recommendation = {
   batteryLabel: string;
   inverterLabel: string;
   solarPanelLabel: string;
+  expectedBackupDirection: string;
+  whyThisFits: string;
   shortExplanation: string;
   practicalStartingPoint: string;
   disclaimer: string;
 };
 
-export type RecommendationMatch = {
-  goal: MatchValue<EstimateGoalId>;
-  applianceProfile: MatchValue<ApplianceProfileId>;
-  budget: MatchValue<EstimateBudgetId>;
+export type ApplianceLoadGroupConfig = {
+  id: ApplianceLoadGroupId;
+  label: string;
+  appliances: readonly EstimateApplianceId[];
 };
 
-export type RecommendationConfigEntry = Recommendation & {
-  match: RecommendationMatch;
-  conservativeRank: number;
+export type RuntimeBandConfig = {
+  id: EstimateRuntimeId;
+  label: string;
+  labels: readonly string[];
+};
+
+export type BudgetBandConfig = {
+  id: EstimateBudgetId;
+  label: string;
+  planningSignal: string;
+};
+
+export type RecommendationBandConfig = {
+  id: RecommendationBandId;
+  recommendationId: string;
+  title: string;
+  systemSizeLabel: string;
+  inverterLabel: string;
+  batteryLabel: string;
+  solarPanelLabel: string;
+  practicalStartingPoint: string;
+  expectedBackupDirection: string;
+  whyTemplate: string;
 };
 
 export type TimelineStageConfig = {
@@ -103,18 +124,21 @@ export type TimelineStageConfig = {
 
 export type RecommendationDataset = {
   version: string;
-  fallbackRecommendationId: string;
-  fallbackApplianceProfileId: ApplianceProfileId;
+  fallbackRecommendationBandId: RecommendationBandId;
   answerOptions: {
     goals: readonly AnswerOption<EstimateGoalId>[];
     budgets: readonly AnswerOption<EstimateBudgetId>[];
     appliances: readonly AnswerOption<EstimateApplianceId>[];
+    runtimes: readonly AnswerOption<EstimateRuntimeId>[];
     timelines: readonly AnswerOption<EstimateTimelineId>[];
     unknownGoalId: EstimateGoalId;
     unknownBudgetId: EstimateBudgetId;
+    unknownRuntimeId: EstimateRuntimeId;
     unknownTimelineId: EstimateTimelineId;
   };
-  applianceProfiles: readonly ApplianceProfileConfig[];
+  applianceLoadGroups: readonly ApplianceLoadGroupConfig[];
+  runtimeBands: readonly RuntimeBandConfig[];
+  budgetBands: readonly BudgetBandConfig[];
+  recommendationBands: readonly RecommendationBandConfig[];
   timelineStages: readonly TimelineStageConfig[];
-  recommendations: readonly RecommendationConfigEntry[];
 };

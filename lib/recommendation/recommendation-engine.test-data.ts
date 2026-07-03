@@ -1,174 +1,120 @@
-import { recommendationConfig } from "./recommendation-config";
 import {
   getRecommendation,
   mapTimelineToJourneyStage,
 } from "./recommendation-engine";
-import type {
-  Recommendation,
-  RecommendationAnswers,
-  RecommendationConfigEntry,
-  RecommendationDataset,
-} from "./types";
+import type { Recommendation, RecommendationAnswers } from "./types";
 
 type RecommendationVerificationCase = {
   name: string;
   answers: RecommendationAnswers;
   expectedRecommendationId: string;
+  expectedTitle: string;
+  expectedBatteryText?: string;
+  expectedWhyText?: string;
 };
 
 type RecommendationVerificationResult = RecommendationVerificationCase & {
   actualRecommendationId: string;
+  actualTitle: string;
   passed: boolean;
   recommendation: Recommendation;
 };
 
-const tieDisclaimer =
-  "Remember: This is a starting point designed to help you understand your options. Every home is different, and your equipment may change after discussing your goals.";
-
 const verificationCases: readonly RecommendationVerificationCase[] = [
   {
-    name: "blackout plus lights and low budget returns conservative backup",
+    name: "small starter loads return a 12V starter range",
     answers: {
       goal: "Keep my home running during blackouts",
-      budget: "Under JMD $250,000",
-      appliances: ["Lights"],
+      budget: "JMD $250,000-500,000",
+      appliances: ["Lights", "TV", "Wi-Fi"],
+      runtime: "2-4 hours",
       timeline: "Within 6 months",
     },
-    expectedRecommendationId: "blackout-lights-backup-under-250k",
+    expectedRecommendationId: "module10-12v-starter-backup-range",
+    expectedTitle: "12V starter backup range",
   },
   {
-    name: "both plus refrigerator and mid budget returns hybrid-style starter",
+    name: "refrigerator essentials return a 24V home essentials range",
     answers: {
-      goal: "Both",
+      goal: "Keep my home running during blackouts",
       budget: "JMD $500,000-1,000,000",
-      appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
+      appliances: ["Refrigerator", "TV", "Wi-Fi", "Fan"],
+      runtime: "5-8 hours",
       timeline: "Within 3 months",
     },
-    expectedRecommendationId: "hybrid-fridge-500k-1m",
+    expectedRecommendationId: "module10-24v-home-essentials-backup-range",
+    expectedTitle: "24V home essentials backup range",
   },
   {
-    name: "air conditioner does not automatically oversize beyond budget",
+    name: "overnight refrigerator essentials keep 24V with longer battery language",
     answers: {
-      goal: "Both",
-      budget: "Under JMD $250,000",
-      appliances: ["Lights", "Air Conditioner"],
+      goal: "Keep my home running during blackouts",
+      budget: "JMD $500,000-1,000,000",
+      appliances: ["Refrigerator", "Wi-Fi", "Fan"],
+      runtime: "Overnight",
       timeline: "As soon as possible",
     },
-    expectedRecommendationId: "hybrid-ac-budget-limited",
+    expectedRecommendationId: "module10-24v-home-essentials-backup-range",
+    expectedTitle: "24V home essentials backup range",
+    expectedBatteryText: "overnight essentials",
   },
   {
-    name: "unsure answers return safe beginner recommendation",
-    answers: {
-      goal: "I'm not sure yet",
-      budget: "I'm not sure yet",
-      appliances: ["Fan"],
-      timeline: "Just exploring",
-    },
-    expectedRecommendationId: "safe-beginner-unsure",
-  },
-  {
-    name: "freezer selected returns refrigeration load review",
+    name: "water pump and freezer return a 48V larger backup range",
     answers: {
       goal: "Both",
-      budget: "JMD $500,000-1,000,000",
-      appliances: ["Freezer"],
+      budget: "Over JMD $1,000,000",
+      appliances: ["Water Pump", "Freezer"],
+      runtime: "5-8 hours",
       timeline: "Within 3 months",
     },
-    expectedRecommendationId: "refrigeration-load-review",
+    expectedRecommendationId: "module10-48v-larger-backup-planning-range",
+    expectedTitle: "48V larger backup planning range",
+    expectedWhyText: "Pump horsepower",
   },
   {
-    name: "water pump selected returns pump load review",
+    name: "AC load returns a 48V larger backup range with AC check language",
     answers: {
-      goal: "Both",
-      budget: "JMD $500,000-1,000,000",
-      appliances: ["Water Pump"],
-      timeline: "Within 6 months",
+      goal: "Keep my home running during blackouts",
+      budget: "Over JMD $1,000,000",
+      appliances: ["Air Conditioner", "Refrigerator", "Wi-Fi"],
+      runtime: "Overnight",
+      timeline: "Within 3 months",
     },
-    expectedRecommendationId: "water-pump-500k-1m",
+    expectedRecommendationId: "module10-48v-larger-backup-planning-range",
+    expectedTitle: "48V larger backup planning range",
+    expectedWhyText: "AC size",
   },
   {
-    name: "other selected returns conservative load review",
+    name: "other appliance returns custom planning language",
     answers: {
       goal: "Lower my electricity bill",
       budget: "JMD $250,000-500,000",
-      appliances: ["Other"],
+      appliances: ["Other", "Lights"],
+      runtime: "2-4 hours",
       timeline: "Just exploring",
     },
-    expectedRecommendationId: "other-load-250k-500k",
-  },
-  {
-    name: "water pump plus low budget stays budget-limited",
-    answers: {
-      goal: "Keep my home running during blackouts",
-      budget: "Under JMD $250,000",
-      appliances: ["Water Pump"],
-      timeline: "As soon as possible",
-    },
-    expectedRecommendationId: "water-pump-under-250k",
-  },
-  {
-    name: "freezer plus refrigerator returns refrigeration load review",
-    answers: {
-      goal: "Keep my home running during blackouts",
-      budget: "JMD $500,000-1,000,000",
-      appliances: ["Freezer", "Refrigerator"],
-      timeline: "Within 6 months",
-    },
-    expectedRecommendationId: "refrigeration-load-review",
-  },
-  {
-    name: "unknown answers with other still return config recommendation",
-    answers: {
-      goal: "Unexpected goal",
-      budget: "Unexpected budget",
-      appliances: ["Other", "Unexpected appliance"],
-      timeline: "Unexpected timeline",
-    },
-    expectedRecommendationId: "other-load-unsure-budget",
+    expectedRecommendationId: "module10-custom-appliance-planning-range",
+    expectedTitle: "Custom appliance planning range",
+    expectedWhyText: "wattage or model",
   },
 ];
 
-const tieLowerRecommendation: RecommendationConfigEntry = {
-  recommendationId: "tie-lower-conservative",
-  title: "Tie lower conservative option",
-  systemSizeLabel: "Lower tied starter",
-  batteryLabel: "Lower tied battery starting range",
-  inverterLabel: "Lower tied inverter starting range",
-  solarPanelLabel: "Lower tied panel allowance",
-  shortExplanation: "Used only to verify conservative tie-breaking.",
-  practicalStartingPoint: "Choose this when match scores are otherwise equal.",
-  disclaimer: tieDisclaimer,
-  match: {
-    goal: "any",
-    applianceProfile: "lights_only",
-    budget: "under_250k",
-  },
-  conservativeRank: 1,
-};
-
-const tieHigherRecommendation: RecommendationConfigEntry = {
-  recommendationId: "tie-higher-less-conservative",
-  title: "Tie higher less conservative option",
-  systemSizeLabel: "Higher tied starter",
-  batteryLabel: "Higher tied battery starting range",
-  inverterLabel: "Higher tied inverter starting range",
-  solarPanelLabel: "Higher tied panel allowance",
-  shortExplanation: "Used only to verify conservative tie-breaking.",
-  practicalStartingPoint: "This should lose when match scores are equal.",
-  disclaimer: tieDisclaimer,
-  match: {
-    goal: "blackout_backup",
-    applianceProfile: "lights_only",
-    budget: "any",
-  },
-  conservativeRank: 2,
-};
-
-const tieBreakerDataset: RecommendationDataset = {
-  ...recommendationConfig,
-  fallbackRecommendationId: tieLowerRecommendation.recommendationId,
-  recommendations: [tieHigherRecommendation, tieLowerRecommendation],
-};
+function casePassed(
+  verificationCase: RecommendationVerificationCase,
+  recommendation: Recommendation,
+) {
+  return (
+    recommendation.recommendationId ===
+      verificationCase.expectedRecommendationId &&
+    recommendation.title === verificationCase.expectedTitle &&
+    (!verificationCase.expectedBatteryText ||
+      recommendation.batteryLabel.includes(
+        verificationCase.expectedBatteryText,
+      )) &&
+    (!verificationCase.expectedWhyText ||
+      recommendation.whyThisFits.includes(verificationCase.expectedWhyText))
+  );
+}
 
 export function getRecommendationEngineVerificationExamples() {
   return verificationCases.map((verificationCase) => ({
@@ -186,29 +132,31 @@ export function runRecommendationEngineVerification() {
       return {
         ...verificationCase,
         actualRecommendationId: recommendation.recommendationId,
-        passed:
-          recommendation.recommendationId ===
-          verificationCase.expectedRecommendationId,
+        actualTitle: recommendation.title,
+        passed: casePassed(verificationCase, recommendation),
         recommendation,
       };
     },
   );
   const timelineSoonRecommendation = getRecommendation({
-    goal: "Both",
+    goal: "Keep my home running during blackouts",
     budget: "JMD $500,000-1,000,000",
-    appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
+    appliances: ["Refrigerator", "TV", "Wi-Fi", "Fan"],
+    runtime: "5-8 hours",
     timeline: "As soon as possible",
   });
   const timelineExploringRecommendation = getRecommendation({
-    goal: "Both",
+    goal: "Keep my home running during blackouts",
     budget: "JMD $500,000-1,000,000",
-    appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
+    appliances: ["Refrigerator", "TV", "Wi-Fi", "Fan"],
+    runtime: "5-8 hours",
     timeline: "Just exploring",
   });
   const contactFieldRecommendation = getRecommendation({
-    goal: "Both",
+    goal: "Keep my home running during blackouts",
     budget: "JMD $500,000-1,000,000",
-    appliances: ["Lights", "TV", "Wi-Fi", "Refrigerator"],
+    appliances: ["Refrigerator", "TV", "Wi-Fi", "Fan"],
+    runtime: "5-8 hours",
     timeline: "As soon as possible",
     name: "Sample Customer",
     phone: "+1 (876) 555-0100",
@@ -218,31 +166,18 @@ export function runRecommendationEngineVerification() {
     phone: string;
     email: string;
   });
-  const tieRecommendation = getRecommendation(
-    {
-      goal: "Keep my home running during blackouts",
-      budget: "Under JMD $250,000",
-      appliances: ["Lights"],
-      timeline: "Within 3 months",
-    },
-    tieBreakerDataset,
-  );
   const timelineIsTechnicalNoOp =
     timelineSoonRecommendation.recommendationId ===
     timelineExploringRecommendation.recommendationId;
   const contactFieldsAreTechnicalNoOp =
     timelineSoonRecommendation.recommendationId ===
     contactFieldRecommendation.recommendationId;
-  const tieBreakerChoosesLower =
-    tieRecommendation.recommendationId ===
-    tieLowerRecommendation.recommendationId;
   const failedResults = results.filter((result) => !result.passed);
 
   if (
     failedResults.length > 0 ||
     !timelineIsTechnicalNoOp ||
-    !contactFieldsAreTechnicalNoOp ||
-    !tieBreakerChoosesLower
+    !contactFieldsAreTechnicalNoOp
   ) {
     throw new Error(
       [
@@ -256,9 +191,6 @@ export function runRecommendationEngineVerification() {
         contactFieldsAreTechnicalNoOp
           ? undefined
           : "contact no-op check failed: technical recommendation changed",
-        tieBreakerChoosesLower
-          ? undefined
-          : "tie-breaker check failed: lower conservative recommendation did not win",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -269,7 +201,6 @@ export function runRecommendationEngineVerification() {
     cases: results,
     timelineIsTechnicalNoOp,
     contactFieldsAreTechnicalNoOp,
-    tieBreakerChoosesLower,
     journeyStageExamples: {
       asap: mapTimelineToJourneyStage("As soon as possible"),
       within3Months: mapTimelineToJourneyStage("Within 3 months"),

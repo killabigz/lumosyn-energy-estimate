@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RecommendationResult } from "@/components/estimate/RecommendationResult";
+import {
+  RecommendationResult,
+  type EstimateSaveStatus,
+} from "@/components/estimate/RecommendationResult";
 import { EstimateProgress } from "@/components/ui/EstimateProgress";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { getRecommendation, type Recommendation } from "@/lib/recommendation";
@@ -55,6 +58,23 @@ type EstimateState = {
   email: string;
 };
 
+type EstimateSubmissionRequest = {
+  name: string;
+  whatsapp: string;
+  email: string;
+  goal: string;
+  budget: string;
+  appliances: string[];
+  otherAppliance: string;
+  timeline: string;
+  recommendationId: string;
+  recommendationTitle: string;
+  systemSizeLabel: string;
+  batteryLabel: string;
+  inverterLabel: string;
+  solarPanelLabel: string;
+};
+
 const initialEstimate: EstimateState = {
   goal: "",
   budget: "",
@@ -94,6 +114,15 @@ function formatJamaicanNumber(digits: string) {
 
 function isValidJamaicanNumber(digits: string) {
   return digits.length === 10 && digits.startsWith("876");
+}
+
+function isSuccessfulSaveResponse(value: unknown) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "ok" in value &&
+    value.ok === true
+  );
 }
 
 function ChoiceButton({
@@ -144,12 +173,16 @@ export function EstimateFlow() {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const isMountedRef = useRef(true);
+  const saveAttemptKeyRef = useRef<string | null>(null);
+  const saveAttemptTokenRef = useRef(0);
   const [activeQuestion, setActiveQuestion] = useState(1);
   const [estimate, setEstimate] = useState<EstimateState>(initialEstimate);
   const [otherAppliance, setOtherAppliance] = useState("");
   const [recommendation, setRecommendation] = useState<Recommendation | null>(
     null,
   );
+  const [saveStatus, setSaveStatus] = useState<EstimateSaveStatus>("idle");
   const formattedWhatsApp = formatJamaicanNumber(estimate.whatsapp);
   const isOtherApplianceSelected = estimate.appliances.includes("Other");
   const isShowingResult = recommendation !== null;
@@ -175,6 +208,15 @@ export function EstimateFlow() {
       estimate.name.trim() && isValidJamaicanNumber(estimate.whatsapp),
     );
   }, [activeQuestion, estimate]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      saveAttemptTokenRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -209,6 +251,82 @@ export function EstimateFlow() {
     }));
   }
 
+  function buildSubmissionPayload(
+    nextRecommendation: Recommendation,
+  ): EstimateSubmissionRequest {
+    return {
+      name: estimate.name.trim(),
+      whatsapp: estimate.whatsapp,
+      email: estimate.email.trim(),
+      goal: estimate.goal,
+      budget: estimate.budget,
+      appliances: estimate.appliances,
+      otherAppliance: isOtherApplianceSelected ? otherAppliance.trim() : "",
+      timeline: estimate.timeline,
+      recommendationId: nextRecommendation.recommendationId,
+      recommendationTitle: nextRecommendation.title,
+      systemSizeLabel: nextRecommendation.systemSizeLabel,
+      batteryLabel: nextRecommendation.batteryLabel,
+      inverterLabel: nextRecommendation.inverterLabel,
+      solarPanelLabel: nextRecommendation.solarPanelLabel,
+    };
+  }
+
+  function saveEstimateSubmission(nextRecommendation: Recommendation) {
+    const payload = buildSubmissionPayload(nextRecommendation);
+    const payloadKey = JSON.stringify(payload);
+
+    if (saveAttemptKeyRef.current === payloadKey) {
+      return;
+    }
+
+    const attemptToken = saveAttemptTokenRef.current + 1;
+    saveAttemptKeyRef.current = payloadKey;
+    saveAttemptTokenRef.current = attemptToken;
+    setSaveStatus("saving");
+
+    window.requestAnimationFrame(() => {
+      if (
+        !isMountedRef.current ||
+        saveAttemptTokenRef.current !== attemptToken
+      ) {
+        return;
+      }
+
+      fetch("/api/estimate-submissions", {
+        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      })
+        .then(async (response) => {
+          const responseBody: unknown = await response
+            .json()
+            .catch(() => null);
+
+          if (!response.ok || !isSuccessfulSaveResponse(responseBody)) {
+            throw new Error("Estimate save failed.");
+          }
+
+          if (
+            isMountedRef.current &&
+            saveAttemptTokenRef.current === attemptToken
+          ) {
+            setSaveStatus("saved");
+          }
+        })
+        .catch(() => {
+          if (
+            isMountedRef.current &&
+            saveAttemptTokenRef.current === attemptToken
+          ) {
+            setSaveStatus("failed");
+          }
+        });
+    });
+  }
+
   function toggleAppliance(appliance: string) {
     setEstimate((current) => {
       const isSelected = current.appliances.includes(appliance);
@@ -237,6 +355,9 @@ export function EstimateFlow() {
     setEstimate(initialEstimate);
     setOtherAppliance("");
     setRecommendation(null);
+    setSaveStatus("idle");
+    saveAttemptKeyRef.current = null;
+    saveAttemptTokenRef.current += 1;
     setActiveQuestion(1);
   }
 
@@ -250,14 +371,16 @@ export function EstimateFlow() {
     }
 
     if (activeQuestion === totalQuestions) {
-      setRecommendation(
-        getRecommendation({
-          goal: estimate.goal,
-          budget: estimate.budget,
-          appliances: estimate.appliances,
-          timeline: estimate.timeline,
-        }),
-      );
+      const nextRecommendation = getRecommendation({
+        goal: estimate.goal,
+        budget: estimate.budget,
+        appliances: estimate.appliances,
+        timeline: estimate.timeline,
+      });
+
+      setRecommendation(nextRecommendation);
+      setSaveStatus("idle");
+      saveEstimateSubmission(nextRecommendation);
       return;
     }
 
@@ -282,6 +405,7 @@ export function EstimateFlow() {
             onBackHome={backHome}
             onStartOver={startOver}
             recommendation={recommendation}
+            saveStatus={saveStatus}
           />
         ) : (
           <>

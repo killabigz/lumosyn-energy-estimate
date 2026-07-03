@@ -3,12 +3,15 @@ import type { Ref } from "react";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import type { Recommendation } from "@/lib/recommendation";
 
+export type EstimateSaveStatus = "idle" | "saving" | "saved" | "failed";
+
 type RecommendationResultProps = {
   headingRef?: Ref<HTMLHeadingElement>;
   name: string;
   onBackHome: () => void;
   onStartOver: () => void;
   recommendation: Recommendation;
+  saveStatus: EstimateSaveStatus;
 };
 
 export function RecommendationResult({
@@ -17,6 +20,7 @@ export function RecommendationResult({
   onBackHome,
   onStartOver,
   recommendation,
+  saveStatus,
 }: RecommendationResultProps) {
   const firstName = name.trim();
   const resultDetails = [
@@ -56,6 +60,22 @@ export function RecommendationResult({
           This recommendation is meant to help you understand your options
           before a deeper conversation about your home.
         </p>
+        {saveStatus === "saved" && (
+          <p
+            aria-live="polite"
+            className="text-sm font-semibold text-secondary"
+          >
+            Estimate saved.
+          </p>
+        )}
+        {saveStatus === "failed" && (
+          <p
+            aria-live="polite"
+            className="text-sm font-semibold text-secondary"
+          >
+            Your estimate is showing, but we could not save it right now.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-5">

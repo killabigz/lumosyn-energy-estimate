@@ -1,12 +1,13 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { useRef, useState } from "react";
 import { ButtonLink } from "@/components/ui/PrimaryButton";
 import { LumosynLogo } from "@/components/ui/LumosynLogo";
 
-const navItems = [{ href: "#about", label: "About" }];
+const navItems = [{ href: "/about", label: "About Lumosyn" }];
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,14 +44,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
-        <a
+        <Link
           aria-label="Lumosyn home"
           className="rounded-card outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          href="#top"
+          href="/"
           onClick={closeMenu}
         >
           <LumosynLogo priority />
-        </a>
+        </Link>
 
         <nav aria-label="Primary navigation" className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (
@@ -89,10 +90,10 @@ export function SiteHeader() {
           <div className="mx-auto flex max-w-6xl flex-col gap-3">
             <a
               className="rounded-card px-3 py-3 text-base font-semibold text-foreground outline-none transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              href="#about"
+              href="/about"
               onClick={closeMenu}
             >
-              About
+              About Lumosyn
             </a>
             <a
               className="rounded-card px-3 py-3 text-base font-semibold text-foreground outline-none transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"

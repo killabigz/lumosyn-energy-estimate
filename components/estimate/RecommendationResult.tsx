@@ -1,29 +1,56 @@
-import { Home, RefreshCcw } from "lucide-react";
 import type { Ref } from "react";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { ButtonLink } from "@/components/ui/PrimaryButton";
 import type { Recommendation } from "@/lib/recommendation";
 
 export type EstimateSaveStatus = "idle" | "saving" | "saved" | "failed";
 
 type RecommendationResultProps = {
+  appliances: string[];
+  goal: string;
   headingRef?: Ref<HTMLHeadingElement>;
   name: string;
-  onBackHome: () => void;
-  onStartOver: () => void;
+  otherAppliance: string;
   recommendation: Recommendation;
+  runtime: string;
   saveStatus: EstimateSaveStatus;
 };
 
+function formatAppliances(appliances: string[], otherAppliance: string) {
+  return appliances
+    .map((appliance) =>
+      appliance === "Other" && otherAppliance.trim()
+        ? `Other: ${otherAppliance.trim()}`
+        : appliance,
+    )
+    .join(", ");
+}
+
 export function RecommendationResult({
+  appliances,
+  goal,
   headingRef,
   name,
-  onBackHome,
-  onStartOver,
+  otherAppliance,
   recommendation,
+  runtime,
   saveStatus,
 }: RecommendationResultProps) {
   const firstName = name.trim();
-  const resultDetails = [
+  const answerDetails = [
+    {
+      label: "Goal",
+      value: goal,
+    },
+    {
+      label: "Appliances",
+      value: formatAppliances(appliances, otherAppliance),
+    },
+    {
+      label: "Runtime",
+      value: runtime,
+    },
+  ];
+  const startingPointDetails = [
     {
       label: "System size",
       value: recommendation.systemSizeLabel,
@@ -43,8 +70,8 @@ export function RecommendationResult({
   ];
 
   return (
-    <div className="grid gap-8">
-      <div className="grid gap-4">
+    <div className="grid gap-6">
+      <div className="grid gap-3">
         <p className="text-sm font-semibold text-accent">
           Recommendation result
         </p>
@@ -54,12 +81,8 @@ export function RecommendationResult({
           ref={headingRef}
           tabIndex={-1}
         >
-          Hi {firstName}, here&apos;s a practical starting point for you.
+          Hi {firstName}, here&apos;s a practical starting point.
         </h1>
-        <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
-          This recommendation is meant to help you understand your options
-          before a deeper conversation about your home.
-        </p>
         {saveStatus === "saved" && (
           <p
             aria-live="polite"
@@ -78,70 +101,81 @@ export function RecommendationResult({
         )}
       </div>
 
-      <div className="grid gap-5">
-        <div>
-          <p className="text-sm font-semibold text-secondary">
-            Recommendation
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-normal text-foreground">
-            {recommendation.title}
+      <div className="grid gap-4">
+        <section className="grid gap-3">
+          <h2 className="text-xl font-semibold text-foreground">
+            What you told us
           </h2>
-        </div>
+          <dl className="overflow-hidden rounded-card border border-border bg-background/70">
+            {answerDetails.map((detail) => (
+              <div
+                className="grid gap-1 border-b border-border px-4 py-3 last:border-b-0 sm:grid-cols-[8rem_1fr] sm:gap-4"
+                key={detail.label}
+              >
+                <dt className="text-sm font-semibold text-secondary">
+                  {detail.label}
+                </dt>
+                <dd className="text-sm font-semibold leading-6 text-foreground sm:text-base">
+                  {detail.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
-        <dl className="overflow-hidden rounded-card border border-border bg-background/70">
-          {resultDetails.map((detail) => (
-            <div
-              className="grid gap-1 border-b border-border p-4 last:border-b-0 sm:grid-cols-[11rem_1fr] sm:gap-4"
-              key={detail.label}
-            >
-              <dt className="text-sm font-semibold text-secondary">
-                {detail.label}
-              </dt>
-              <dd className="text-base font-semibold leading-7 text-foreground">
-                {detail.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="grid gap-5 border-t border-border pt-6">
-        <div className="grid gap-2">
-          <h3 className="text-lg font-semibold text-foreground">
-            Why this starting point fits
-          </h3>
+        <section className="grid gap-3">
+          <div>
+            <p className="text-sm font-semibold text-secondary">
+              Recommended starting point
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-normal text-foreground">
+              {recommendation.title}
+            </h2>
+          </div>
+          <dl className="overflow-hidden rounded-card border border-border bg-background/70">
+            {startingPointDetails.map((detail) => (
+              <div
+                className="grid gap-1 border-b border-border px-4 py-3 last:border-b-0 sm:grid-cols-[8rem_1fr] sm:gap-4"
+                key={detail.label}
+              >
+                <dt className="text-sm font-semibold text-secondary">
+                  {detail.label}
+                </dt>
+                <dd className="text-sm font-semibold leading-6 text-foreground sm:text-base">
+                  {detail.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
           <p className="text-base leading-7 text-muted">
             {recommendation.shortExplanation}
           </p>
-        </div>
+        </section>
+      </div>
 
-        <div className="grid gap-2">
+      <div className="grid gap-4 border-t border-border pt-5">
+        <div>
           <h3 className="text-lg font-semibold text-foreground">
-            Practical starting point
+            📸 Save Your Recommendation
           </h3>
-          <p className="text-base leading-7 text-muted">
-            {recommendation.practicalStartingPoint}
+          <p className="mt-1 text-base leading-7 text-muted">
+            Take a screenshot so you can refer back to it later.
           </p>
         </div>
 
-        <p className="rounded-card border border-accent/30 bg-accent-soft px-4 py-4 text-sm leading-6 text-muted">
-          {recommendation.disclaimer}
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <PrimaryButton className="gap-2 sm:min-w-40" onClick={onStartOver}>
-          <RefreshCcw aria-hidden="true" size={18} strokeWidth={2.3} />
-          Start Over
-        </PrimaryButton>
-        <PrimaryButton
-          className="gap-2 sm:min-w-40"
-          onClick={onBackHome}
-          variant="secondary"
-        >
-          <Home aria-hidden="true" size={18} strokeWidth={2.3} />
-          Back to Home
-        </PrimaryButton>
+        <div className="grid gap-3 rounded-card border border-growth/40 bg-surface-soft p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">
+              🌱 Curious why Lumosyn exists?
+            </h3>
+            <p className="mt-1 text-base leading-7 text-muted">
+              Discover why we&apos;re building simple energy tools for Jamaica.
+            </p>
+          </div>
+          <ButtonLink className="sm:w-fit" href="/why-lumosyn-exists">
+            Why Lumosyn Exists →
+          </ButtonLink>
+        </div>
       </div>
     </div>
   );

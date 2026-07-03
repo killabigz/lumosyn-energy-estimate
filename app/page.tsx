@@ -1,8 +1,6 @@
-import { AboutSection } from "@/components/layout/AboutSection";
 import { LandingHero } from "@/components/layout/LandingHero";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { WhyLumosyn } from "@/components/layout/WhyLumosyn";
 
 export default function Home() {
   return (
@@ -17,8 +15,6 @@ export default function Home() {
       <SiteHeader />
       <main id="content">
         <LandingHero />
-        <AboutSection />
-        <WhyLumosyn />
       </main>
       <SiteFooter />
     </>

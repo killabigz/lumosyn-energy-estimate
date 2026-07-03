@@ -13,6 +13,7 @@ type EstimateSubmissionPayload = {
   budget: string;
   appliances: string[];
   other_appliance: string | null;
+  runtime: string;
   timeline: string;
   journey_stage: string;
   recommendation_id: string;
@@ -21,6 +22,10 @@ type EstimateSubmissionPayload = {
   battery_label: string;
   inverter_label: string;
   solar_panel_label: string;
+};
+
+type CustomerRecord = {
+  id: string;
 };
 
 function jsonFailure(status: number) {
@@ -65,16 +70,38 @@ function getRequiredAppliances(body: Record<string, unknown>) {
   return appliances.length > 0 ? appliances : undefined;
 }
 
-function parseSubmissionPayload(body: unknown): EstimateSubmissionPayload | undefined {
+function normalizeJamaicanWhatsApp(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const localNumber =
+    digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+
+  return JAMAICAN_WHATSAPP_PATTERN.test(localNumber)
+    ? localNumber
+    : undefined;
+}
+
+function includesOtherAppliance(appliances: string[]) {
+  return appliances.some(
+    (appliance) => appliance.trim().toLowerCase() === "other",
+  );
+}
+
+function parseSubmissionPayload(
+  body: unknown,
+): EstimateSubmissionPayload | undefined {
   if (!isRecord(body)) {
     return undefined;
   }
 
   const name = getRequiredText(body, "name");
-  const whatsapp = getRequiredText(body, "whatsapp");
+  const whatsapp = normalizeJamaicanWhatsApp(
+    getRequiredText(body, "whatsapp") ?? "",
+  );
   const goal = getRequiredText(body, "goal");
   const budget = getRequiredText(body, "budget");
   const appliances = getRequiredAppliances(body);
+  const otherAppliance = getOptionalText(body, "otherAppliance");
+  const runtime = getRequiredText(body, "runtime");
   const timeline = getRequiredText(body, "timeline");
   const recommendationId = getRequiredText(body, "recommendationId");
   const recommendationTitle = getRequiredText(body, "recommendationTitle");
@@ -89,6 +116,7 @@ function parseSubmissionPayload(body: unknown): EstimateSubmissionPayload | unde
     !goal ||
     !budget ||
     !appliances ||
+    !runtime ||
     !timeline ||
     !recommendationId ||
     !recommendationTitle ||
@@ -96,7 +124,7 @@ function parseSubmissionPayload(body: unknown): EstimateSubmissionPayload | unde
     !batteryLabel ||
     !inverterLabel ||
     !solarPanelLabel ||
-    !JAMAICAN_WHATSAPP_PATTERN.test(whatsapp)
+    (includesOtherAppliance(appliances) && !otherAppliance)
   ) {
     return undefined;
   }
@@ -108,7 +136,8 @@ function parseSubmissionPayload(body: unknown): EstimateSubmissionPayload | unde
     goal,
     budget,
     appliances,
-    other_appliance: getOptionalText(body, "otherAppliance"),
+    other_appliance: otherAppliance,
+    runtime,
     timeline,
     journey_stage: mapTimelineToJourneyStage(timeline),
     recommendation_id: recommendationId,
@@ -120,6 +149,134 @@ function parseSubmissionPayload(body: unknown): EstimateSubmissionPayload | unde
   };
 }
 
+async function getExistingCustomer(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  whatsapp: string,
+) {
+  const { data, error } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("whatsapp", whatsapp)
+    .maybeSingle<CustomerRecord>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function updateCustomer(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  customerId: string,
+  payload: EstimateSubmissionPayload,
+) {
+  const { error } = await supabase
+    .from("customers")
+    .update({
+      email: payload.email,
+      journey_stage: payload.journey_stage,
+      name: payload.name,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", customerId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function createCustomer(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  payload: EstimateSubmissionPayload,
+) {
+  const { data, error } = await supabase
+    .from("customers")
+    .insert({
+      email: payload.email,
+      journey_stage: payload.journey_stage,
+      name: payload.name,
+      whatsapp: payload.whatsapp,
+    })
+    .select("id")
+    .single<CustomerRecord>();
+
+  if (error || !data?.id) {
+    throw error ?? new Error("Customer was not created.");
+  }
+
+  return data;
+}
+
+async function resolveCustomer(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  payload: EstimateSubmissionPayload,
+) {
+  const existingCustomer = await getExistingCustomer(supabase, payload.whatsapp);
+
+  if (existingCustomer) {
+    await updateCustomer(supabase, existingCustomer.id, payload);
+
+    return existingCustomer;
+  }
+
+  try {
+    return await createCustomer(supabase, payload);
+  } catch {
+    const customer = await getExistingCustomer(supabase, payload.whatsapp);
+
+    if (!customer) {
+      throw new Error("Customer was not available.");
+    }
+
+    await updateCustomer(supabase, customer.id, payload);
+
+    return customer;
+  }
+}
+
+async function createAssessment(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  customerId: string,
+  payload: EstimateSubmissionPayload,
+) {
+  const { error: updateError } = await supabase
+    .from("assessments")
+    .update({ is_latest: false })
+    .eq("customer_id", customerId)
+    .eq("is_latest", true);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  const { data, error } = await supabase
+    .from("assessments")
+    .insert({
+      appliances: payload.appliances,
+      battery_label: payload.battery_label,
+      budget: payload.budget,
+      customer_id: customerId,
+      goal: payload.goal,
+      inverter_label: payload.inverter_label,
+      is_latest: true,
+      journey_stage: payload.journey_stage,
+      other_appliance: payload.other_appliance,
+      recommendation_id: payload.recommendation_id,
+      recommendation_title: payload.recommendation_title,
+      runtime: payload.runtime,
+      solar_panel_label: payload.solar_panel_label,
+      system_size_label: payload.system_size_label,
+      timeline: payload.timeline,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data?.id) {
+    throw error ?? new Error("Assessment was not created.");
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const payload = parseSubmissionPayload(await request.json());
@@ -129,19 +286,11 @@ export async function POST(request: Request) {
     }
 
     const supabase = createSupabaseServiceClient();
-    const { data, error } = await supabase
-      .from("estimate_submissions")
-      .insert(payload)
-      .select("id")
-      .single();
-
-    if (error || !data?.id) {
-      return jsonFailure(500);
-    }
+    const customer = await resolveCustomer(supabase, payload);
+    await createAssessment(supabase, customer.id, payload);
 
     return NextResponse.json({
       ok: true,
-      id: data.id,
     });
   } catch {
     return jsonFailure(500);

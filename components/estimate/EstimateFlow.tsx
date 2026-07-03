@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   RecommendationResult,
@@ -25,6 +24,8 @@ const budgets = [
   "I'm not sure yet",
 ];
 
+const runtimes = ["2-4 hours", "5-8 hours", "Overnight"];
+
 const appliances = [
   "Lights",
   "TV",
@@ -44,7 +45,7 @@ const timelines = [
   "Just exploring",
 ];
 
-const totalQuestions = 5;
+const totalQuestions = 6;
 
 type FieldName = "name" | "whatsapp" | "email";
 
@@ -52,6 +53,7 @@ type EstimateState = {
   goal: string;
   budget: string;
   appliances: string[];
+  runtime: string;
   timeline: string;
   name: string;
   whatsapp: string;
@@ -66,6 +68,7 @@ type EstimateSubmissionRequest = {
   budget: string;
   appliances: string[];
   otherAppliance: string;
+  runtime: string;
   timeline: string;
   recommendationId: string;
   recommendationTitle: string;
@@ -79,6 +82,7 @@ const initialEstimate: EstimateState = {
   goal: "",
   budget: "",
   appliances: [],
+  runtime: "",
   timeline: "",
   name: "",
   whatsapp: "",
@@ -160,7 +164,10 @@ function FieldLabel({
   isRequired?: boolean;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-semibold text-secondary" htmlFor={htmlFor}>
+    <label
+      className="grid gap-2 text-sm font-semibold text-secondary"
+      htmlFor={htmlFor}
+    >
       <span>
         {children}
         {isRequired && <span className="text-accent"> *</span>}
@@ -170,7 +177,6 @@ function FieldLabel({
 }
 
 export function EstimateFlow() {
-  const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const isMountedRef = useRef(true);
@@ -179,6 +185,7 @@ export function EstimateFlow() {
   const [activeQuestion, setActiveQuestion] = useState(1);
   const [estimate, setEstimate] = useState<EstimateState>(initialEstimate);
   const [otherAppliance, setOtherAppliance] = useState("");
+  const [showOtherApplianceError, setShowOtherApplianceError] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(
     null,
   );
@@ -193,14 +200,18 @@ export function EstimateFlow() {
     }
 
     if (activeQuestion === 2) {
-      return Boolean(estimate.budget);
-    }
-
-    if (activeQuestion === 3) {
       return estimate.appliances.length > 0;
     }
 
+    if (activeQuestion === 3) {
+      return Boolean(estimate.runtime);
+    }
+
     if (activeQuestion === 4) {
+      return Boolean(estimate.budget);
+    }
+
+    if (activeQuestion === 5) {
       return Boolean(estimate.timeline);
     }
 
@@ -262,6 +273,7 @@ export function EstimateFlow() {
       budget: estimate.budget,
       appliances: estimate.appliances,
       otherAppliance: isOtherApplianceSelected ? otherAppliance.trim() : "",
+      runtime: estimate.runtime,
       timeline: estimate.timeline,
       recommendationId: nextRecommendation.recommendationId,
       recommendationTitle: nextRecommendation.title,
@@ -328,19 +340,30 @@ export function EstimateFlow() {
   }
 
   function toggleAppliance(appliance: string) {
+    const isDeselectingOther =
+      appliance === "Other" && estimate.appliances.includes("Other");
+
     setEstimate((current) => {
       const isSelected = current.appliances.includes(appliance);
+      const nextAppliances = isSelected
+        ? current.appliances.filter((item) => item !== appliance)
+        : [...current.appliances, appliance];
 
       return {
         ...current,
-        appliances: isSelected
-          ? current.appliances.filter((item) => item !== appliance)
-          : [...current.appliances, appliance],
+        appliances: nextAppliances,
       };
     });
+
+    if (isDeselectingOther) {
+      setShowOtherApplianceError(false);
+    }
   }
 
-  function chooseSingle(field: "goal" | "budget" | "timeline", value: string) {
+  function chooseSingle(
+    field: "goal" | "budget" | "runtime" | "timeline",
+    value: string,
+  ) {
     setEstimate((current) => ({
       ...current,
       [field]: value,
@@ -351,22 +374,17 @@ export function EstimateFlow() {
     setActiveQuestion((current) => Math.max(1, current - 1));
   }
 
-  function startOver() {
-    setEstimate(initialEstimate);
-    setOtherAppliance("");
-    setRecommendation(null);
-    setSaveStatus("idle");
-    saveAttemptKeyRef.current = null;
-    saveAttemptTokenRef.current += 1;
-    setActiveQuestion(1);
-  }
-
-  function backHome() {
-    router.push("/");
-  }
-
   function continueFlow() {
     if (!canContinue) {
+      return;
+    }
+
+    if (
+      activeQuestion === 2 &&
+      isOtherApplianceSelected &&
+      !otherAppliance.trim()
+    ) {
+      setShowOtherApplianceError(true);
       return;
     }
 
@@ -375,6 +393,7 @@ export function EstimateFlow() {
         goal: estimate.goal,
         budget: estimate.budget,
         appliances: estimate.appliances,
+        runtime: estimate.runtime,
         timeline: estimate.timeline,
       });
 
@@ -393,18 +412,18 @@ export function EstimateFlow() {
       className="estimate-stage grid min-h-[calc(100dvh-73px)] w-full content-center px-5 py-8 sm:px-6 sm:py-12 lg:px-8"
     >
       <div
-        className={`estimate-panel motion-fade-up mx-auto grid w-full gap-8 rounded-card border border-border bg-surface p-5 shadow-card sm:p-8 ${
-          isShowingResult ? "max-w-4xl" : "max-w-3xl"
-        }`}
+        className="estimate-panel motion-fade-up mx-auto grid w-full max-w-3xl gap-8 rounded-card border border-border bg-surface p-5 shadow-card sm:p-8"
         ref={panelRef}
       >
         {recommendation ? (
           <RecommendationResult
+            appliances={estimate.appliances}
+            goal={estimate.goal}
             headingRef={headingRef}
             name={estimate.name}
-            onBackHome={backHome}
-            onStartOver={startOver}
+            otherAppliance={isOtherApplianceSelected ? otherAppliance : ""}
             recommendation={recommendation}
+            runtime={estimate.runtime}
             saveStatus={saveStatus}
           />
         ) : (
@@ -443,29 +462,6 @@ export function EstimateFlow() {
                     ref={headingRef}
                     tabIndex={-1}
                   >
-                    What&apos;s your estimated budget?
-                  </h1>
-                  <div className="grid gap-3">
-                    {budgets.map((budget) => (
-                      <ChoiceButton
-                        isSelected={estimate.budget === budget}
-                        key={budget}
-                        label={budget}
-                        onClick={() => chooseSingle("budget", budget)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeQuestion === 3 && (
-                <div className="grid gap-5">
-                  <h1
-                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
-                    id="estimate-heading"
-                    ref={headingRef}
-                    tabIndex={-1}
-                  >
                     Which appliances would you like to keep running?
                   </h1>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -484,20 +480,87 @@ export function EstimateFlow() {
                         Tell us what else you want to run
                       </FieldLabel>
                       <input
-                        className="min-h-12 rounded-card border border-border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary focus:border-accent focus:ring-2 focus:ring-accent/40"
-                        id="other-appliance"
-                        onChange={(event) =>
-                          setOtherAppliance(event.target.value)
+                        aria-describedby={
+                          showOtherApplianceError
+                            ? "other-appliance-error"
+                            : undefined
                         }
+                        aria-invalid={showOtherApplianceError}
+                        className={`min-h-12 rounded-card border bg-background px-4 py-3 text-base text-foreground outline-none transition placeholder:text-secondary ${
+                          showOtherApplianceError
+                            ? "border-red-400/80 shadow-[0_0_0_3px_rgba(248,113,113,0.14)] focus:border-red-300 focus:ring-2 focus:ring-red-400/30"
+                            : "border-border focus:border-accent focus:ring-2 focus:ring-accent/40"
+                        }`}
+                        id="other-appliance"
+                        onChange={(event) => {
+                          setOtherAppliance(event.target.value);
+                          if (event.target.value.trim()) {
+                            setShowOtherApplianceError(false);
+                          }
+                        }}
                         type="text"
                         value={otherAppliance}
                       />
+                      {showOtherApplianceError && (
+                        <p
+                          className="text-sm font-semibold text-red-300"
+                          id="other-appliance-error"
+                        >
+                          Tell us what else you want to run.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
+              {activeQuestion === 3 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    How long would you like these appliances to run?
+                  </h1>
+                  <div className="grid gap-3">
+                    {runtimes.map((runtime) => (
+                      <ChoiceButton
+                        isSelected={estimate.runtime === runtime}
+                        key={runtime}
+                        label={runtime}
+                        onClick={() => chooseSingle("runtime", runtime)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {activeQuestion === 4 && (
+                <div className="grid gap-5">
+                  <h1
+                    className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
+                    id="estimate-heading"
+                    ref={headingRef}
+                    tabIndex={-1}
+                  >
+                    What&apos;s your estimated budget?
+                  </h1>
+                  <div className="grid gap-3">
+                    {budgets.map((budget) => (
+                      <ChoiceButton
+                        isSelected={estimate.budget === budget}
+                        key={budget}
+                        label={budget}
+                        onClick={() => chooseSingle("budget", budget)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeQuestion === 5 && (
                 <div className="grid gap-5">
                   <h1
                     className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"
@@ -520,7 +583,7 @@ export function EstimateFlow() {
                 </div>
               )}
 
-              {activeQuestion === 5 && (
+              {activeQuestion === 6 && (
                 <div className="grid gap-5">
                   <h1
                     className="text-3xl font-semibold leading-tight tracking-normal text-foreground outline-none sm:text-4xl"

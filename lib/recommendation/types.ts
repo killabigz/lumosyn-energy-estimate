@@ -61,6 +61,7 @@ export type RecommendationAnswers = {
   goal: string;
   budget: string;
   appliances: readonly string[];
+  runtime?: string;
   timeline?: string;
 };
 

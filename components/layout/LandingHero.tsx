@@ -1,7 +1,11 @@
 import { BatteryCharging } from "lucide-react";
 import { ButtonLink } from "@/components/ui/PrimaryButton";
 
-export function LandingHero() {
+type LandingHeroProps = {
+  estimateHref?: string;
+};
+
+export function LandingHero({ estimateHref = "/estimate" }: LandingHeroProps) {
   return (
     <section className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div className="motion-fade-up">
@@ -14,7 +18,7 @@ export function LandingHero() {
           solar or backup power plan.
         </p>
         <div className="mt-8">
-          <ButtonLink className="gap-2" href="/estimate">
+          <ButtonLink className="gap-2" href={estimateHref}>
             <BatteryCharging aria-hidden="true" size={18} strokeWidth={2.4} />
             Start My Free Estimate
           </ButtonLink>

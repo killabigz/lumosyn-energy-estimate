@@ -7,6 +7,11 @@ import {
 } from "@/components/estimate/RecommendationResult";
 import { EstimateProgress } from "@/components/ui/EstimateProgress";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import {
+  TRACKING_URL_PARAM_KEYS,
+  sanitizeReferrerValue,
+  type TrackingContext,
+} from "@/lib/analytics/utm";
 import { getRecommendation, type Recommendation } from "@/lib/recommendation";
 
 const goals = [
@@ -76,6 +81,17 @@ type EstimateSubmissionRequest = {
   batteryLabel: string;
   inverterLabel: string;
   solarPanelLabel: string;
+} & TrackingContext;
+
+const defaultTrackingContext: TrackingContext = {
+  utm_source: null,
+  utm_medium: null,
+  utm_campaign: null,
+  utm_content: null,
+  utm_term: null,
+  source: "direct",
+  landing_page: null,
+  referrer: null,
 };
 
 const initialEstimate: EstimateState = {
@@ -129,6 +145,29 @@ function isSuccessfulSaveResponse(value: unknown) {
   );
 }
 
+function removeTrackingParamsFromUrl() {
+  const url = new URL(window.location.href);
+  let didChangeUrl = false;
+
+  for (const key of TRACKING_URL_PARAM_KEYS) {
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      didChangeUrl = true;
+    }
+  }
+
+  if (!didChangeUrl) {
+    return;
+  }
+
+  const nextQuery = url.searchParams.toString();
+  const nextUrl = `${url.pathname}${nextQuery ? `?${nextQuery}` : ""}${
+    url.hash
+  }`;
+
+  window.history.replaceState(window.history.state, "", nextUrl);
+}
+
 function ChoiceButton({
   isSelected,
   label,
@@ -176,12 +215,22 @@ function FieldLabel({
   );
 }
 
-export function EstimateFlow() {
+type EstimateFlowProps = {
+  initialTrackingContext?: TrackingContext;
+};
+
+export function EstimateFlow({
+  initialTrackingContext = defaultTrackingContext,
+}: EstimateFlowProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const isMountedRef = useRef(true);
   const saveAttemptKeyRef = useRef<string | null>(null);
   const saveAttemptTokenRef = useRef(0);
+  const trackingContextRef = useRef<TrackingContext>({
+    ...defaultTrackingContext,
+    ...initialTrackingContext,
+  });
   const [activeQuestion, setActiveQuestion] = useState(1);
   const [estimate, setEstimate] = useState<EstimateState>(initialEstimate);
   const [otherAppliance, setOtherAppliance] = useState("");
@@ -227,6 +276,14 @@ export function EstimateFlow() {
       isMountedRef.current = false;
       saveAttemptTokenRef.current += 1;
     };
+  }, []);
+
+  useEffect(() => {
+    trackingContextRef.current = {
+      ...trackingContextRef.current,
+      referrer: sanitizeReferrerValue(document.referrer),
+    };
+    removeTrackingParamsFromUrl();
   }, []);
 
   useEffect(() => {
@@ -281,6 +338,7 @@ export function EstimateFlow() {
       batteryLabel: nextRecommendation.batteryLabel,
       inverterLabel: nextRecommendation.inverterLabel,
       solarPanelLabel: nextRecommendation.solarPanelLabel,
+      ...trackingContextRef.current,
     };
   }
 

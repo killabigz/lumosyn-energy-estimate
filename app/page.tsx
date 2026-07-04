@@ -1,8 +1,22 @@
 import { LandingHero } from "@/components/layout/LandingHero";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import {
+  buildEstimateHrefFromSearchParams,
+  type SearchParamsRecord,
+} from "@/lib/analytics/utm";
 
-export default function Home() {
+type HomeProps = {
+  searchParams?: Promise<SearchParamsRecord>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const safeSearchParams = searchParams ? await searchParams : {};
+  const estimateHref = buildEstimateHrefFromSearchParams(
+    safeSearchParams,
+    "/",
+  );
+
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -14,7 +28,7 @@ export default function Home() {
       <div id="top" />
       <SiteHeader />
       <main className="estimate-stage flex-1" id="content">
-        <LandingHero />
+        <LandingHero estimateHref={estimateHref} />
       </main>
       <SiteFooter />
     </div>

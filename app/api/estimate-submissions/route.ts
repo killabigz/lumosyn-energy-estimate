@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseTrackingPayload, type TrackingContext } from "@/lib/analytics/utm";
 import { mapTimelineToJourneyStage } from "@/lib/recommendation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -22,7 +23,7 @@ type EstimateSubmissionPayload = {
   battery_label: string;
   inverter_label: string;
   solar_panel_label: string;
-};
+} & TrackingContext;
 
 type CustomerRecord = {
   id: string;
@@ -109,6 +110,7 @@ function parseSubmissionPayload(
   const batteryLabel = getRequiredText(body, "batteryLabel");
   const inverterLabel = getRequiredText(body, "inverterLabel");
   const solarPanelLabel = getRequiredText(body, "solarPanelLabel");
+  const trackingPayload = parseTrackingPayload(body);
 
   if (
     !name ||
@@ -146,6 +148,7 @@ function parseSubmissionPayload(
     battery_label: batteryLabel,
     inverter_label: inverterLabel,
     solar_panel_label: solarPanelLabel,
+    ...trackingPayload,
   };
 }
 
@@ -264,10 +267,18 @@ async function createAssessment(
       other_appliance: payload.other_appliance,
       recommendation_id: payload.recommendation_id,
       recommendation_title: payload.recommendation_title,
+      referrer: payload.referrer,
       runtime: payload.runtime,
       solar_panel_label: payload.solar_panel_label,
+      source: payload.source,
       system_size_label: payload.system_size_label,
       timeline: payload.timeline,
+      utm_campaign: payload.utm_campaign,
+      utm_content: payload.utm_content,
+      utm_medium: payload.utm_medium,
+      utm_source: payload.utm_source,
+      utm_term: payload.utm_term,
+      landing_page: payload.landing_page,
     })
     .select("id")
     .single();

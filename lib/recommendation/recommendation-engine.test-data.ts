@@ -11,6 +11,7 @@ type RecommendationVerificationCase = {
   expectedTitle: string;
   expectedBatteryText?: string;
   expectedWhyText?: string;
+  expectedCautionText?: string;
 };
 
 type RecommendationVerificationResult = RecommendationVerificationCase & {
@@ -31,7 +32,7 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       timeline: "Within 6 months",
     },
     expectedRecommendationId: "module10-12v-starter-backup-range",
-    expectedTitle: "12V starter backup range",
+    expectedTitle: "12V Starter Backup",
   },
   {
     name: "refrigerator essentials return a 24V home essentials range",
@@ -43,7 +44,7 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       timeline: "Within 3 months",
     },
     expectedRecommendationId: "module10-24v-home-essentials-backup-range",
-    expectedTitle: "24V home essentials backup range",
+    expectedTitle: "24V Home Essentials",
   },
   {
     name: "overnight refrigerator essentials keep 24V with longer battery language",
@@ -55,8 +56,8 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       timeline: "As soon as possible",
     },
     expectedRecommendationId: "module10-24v-home-essentials-backup-range",
-    expectedTitle: "24V home essentials backup range",
-    expectedBatteryText: "overnight essentials",
+    expectedTitle: "24V Home Essentials",
+    expectedBatteryText: "24V battery bank",
   },
   {
     name: "water pump and freezer return a 48V larger backup range",
@@ -68,8 +69,8 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       timeline: "Within 3 months",
     },
     expectedRecommendationId: "module10-48v-larger-backup-planning-range",
-    expectedTitle: "48V larger backup planning range",
-    expectedWhyText: "Pump horsepower",
+    expectedTitle: "48V Larger Backup Planning",
+    expectedCautionText: "Water pump and freezer included",
   },
   {
     name: "AC load returns a 48V larger backup range with AC check language",
@@ -81,8 +82,8 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       timeline: "Within 3 months",
     },
     expectedRecommendationId: "module10-48v-larger-backup-planning-range",
-    expectedTitle: "48V larger backup planning range",
-    expectedWhyText: "AC size",
+    expectedTitle: "48V Larger Backup Planning",
+    expectedCautionText: "Air conditioner included",
   },
   {
     name: "other appliance returns custom planning language",
@@ -93,9 +94,9 @@ const verificationCases: readonly RecommendationVerificationCase[] = [
       runtime: "2-4 hours",
       timeline: "Just exploring",
     },
-    expectedRecommendationId: "module10-custom-appliance-planning-range",
-    expectedTitle: "Custom appliance planning range",
-    expectedWhyText: "wattage or model",
+    expectedRecommendationId: "module10-24v-home-essentials-backup-range",
+    expectedTitle: "24V Home Essentials",
+    expectedCautionText: "Custom appliance included",
   },
 ];
 
@@ -103,16 +104,26 @@ function casePassed(
   verificationCase: RecommendationVerificationCase,
   recommendation: Recommendation,
 ) {
-  return (
+  const recommendationMatches =
     recommendation.recommendationId ===
       verificationCase.expectedRecommendationId &&
-    recommendation.title === verificationCase.expectedTitle &&
-    (!verificationCase.expectedBatteryText ||
-      recommendation.batteryLabel.includes(
-        verificationCase.expectedBatteryText,
-      )) &&
-    (!verificationCase.expectedWhyText ||
-      recommendation.whyThisFits.includes(verificationCase.expectedWhyText))
+    recommendation.title === verificationCase.expectedTitle;
+  const batteryMatches =
+    !verificationCase.expectedBatteryText ||
+    recommendation.batteryLabel.includes(verificationCase.expectedBatteryText);
+  const whyMatches =
+    !verificationCase.expectedWhyText ||
+    recommendation.whyThisFits.includes(verificationCase.expectedWhyText);
+  const cautionMatches =
+    !verificationCase.expectedCautionText ||
+    Boolean(
+      recommendation.cautionNote?.includes(
+        verificationCase.expectedCautionText,
+      ),
+    );
+
+  return (
+    recommendationMatches && batteryMatches && whyMatches && cautionMatches
   );
 }
 

@@ -45,8 +45,7 @@ export type ApplianceLoadGroupId =
 export type RecommendationBandId =
   | "12v_starter"
   | "24v_home_essentials"
-  | "48v_larger_backup"
-  | "custom_appliance";
+  | "48v_larger_backup";
 
 export type MatchValue<T extends string> = T | "any";
 
@@ -74,13 +73,16 @@ export type NormalizedRecommendationAnswers = {
 
 export type Recommendation = {
   recommendationId: string;
+  recommendationTitle: string;
   title: string;
   systemSizeLabel: string;
   batteryLabel: string;
   inverterLabel: string;
   solarPanelLabel: string;
-  expectedBackupDirection: string;
+  backupLabel: string;
   whyThisFits: string;
+  goodFor: readonly string[];
+  cautionNote?: string;
   shortExplanation: string;
   practicalStartingPoint: string;
   disclaimer: string;
@@ -107,13 +109,13 @@ export type BudgetBandConfig = {
 export type RecommendationBandConfig = {
   id: RecommendationBandId;
   recommendationId: string;
-  title: string;
+  recommendationTitle: string;
   systemSizeLabel: string;
   inverterLabel: string;
   batteryLabel: string;
   solarPanelLabel: string;
   practicalStartingPoint: string;
-  expectedBackupDirection: string;
+  defaultGoodFor: readonly string[];
   whyTemplate: string;
 };
 

@@ -5,7 +5,6 @@ import type {
   BudgetBandConfig,
   EstimateApplianceId,
   EstimateBudgetId,
-  EstimateGoalId,
   EstimateRuntimeId,
   EstimateTimelineId,
   JourneyStage,
@@ -19,7 +18,7 @@ import type {
 } from "./types";
 
 const practicalEstimateDisclaimer =
-  "This is a practical starting estimate. The setup may change after checking appliance wattage, startup load, roof space, and installation conditions.";
+  "This is a starting estimate, not a final system design. Final sizing may change after reviewing appliance wattage, usage time, and site conditions.";
 
 function normalizeLabel(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -163,10 +162,6 @@ function chooseRecommendationBand(
   const hasFreezer = hasAppliance(answers.appliances, "freezer");
   const longerRuntime = answers.runtime === "longer_backup";
 
-  if (hasCustomLoad) {
-    return "custom_appliance";
-  }
-
   if (hasHeavyLoad) {
     return "48v_larger_backup";
   }
@@ -192,6 +187,10 @@ function chooseRecommendationBand(
   }
 
   if (hasColdStorage) {
+    return "24v_home_essentials";
+  }
+
+  if (hasCustomLoad) {
     return "24v_home_essentials";
   }
 
@@ -282,101 +281,57 @@ function formatList(items: readonly string[]) {
   return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
 }
 
-function buildApplianceSummary(
-  appliances: readonly EstimateApplianceId[],
-  dataset: RecommendationDataset,
-) {
-  return formatList(
-    appliances.map((appliance) => getApplianceLabel(appliance, dataset)),
-  );
+function capitalizeFirst(value: string) {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
-function buildBatteryLabel(
+function buildBackupLabel(runtimeBand: RuntimeBandConfig) {
+  return runtimeBand.labels[0] ?? "Based on selected runtime";
+}
+
+function buildGoodFor(
   band: RecommendationBandConfig,
   answers: NormalizedRecommendationAnswers,
+  dataset: RecommendationDataset,
 ) {
-  if (band.id === "24v_home_essentials") {
-    if (answers.runtime === "longer_backup") {
-      return "Approx. 3-5 kWh battery reserve, planning toward the upper end for overnight essentials";
-    }
+  const selectedLabels = answers.appliances.map((appliance) =>
+    appliance === "other"
+      ? "Custom appliance"
+      : getApplianceLabel(appliance, dataset),
+  );
 
-    if (answers.runtime === "medium_backup") {
-      return "Approx. 3-5 kWh battery reserve for medium essentials backup";
-    }
-  }
-
-  if (band.id === "48v_larger_backup" && answers.runtime === "longer_backup") {
-    return "Approx. 5-10 kWh+ battery reserve for longer backup planning";
-  }
-
-  return band.batteryLabel;
+  return selectedLabels.length > 0 ? selectedLabels : band.defaultGoodFor;
 }
 
-function buildExpectedBackupDirection(
-  band: RecommendationBandConfig,
-  runtimeBand: RuntimeBandConfig,
-) {
-  if (runtimeBand.id === "unsure") {
-    return band.expectedBackupDirection;
+function buildCautionNote(appliances: readonly EstimateApplianceId[]) {
+  if (hasAppliance(appliances, "other")) {
+    return "Custom appliance included. We included your custom appliance in this starting point. Final sizing may change once its wattage is confirmed.";
   }
 
-  const dependencyText =
-    band.id === "48v_larger_backup"
-      ? "appliance wattage, startup load, and usage"
-      : "appliance wattage and usage";
+  const cautionLoads = [
+    hasAppliance(appliances, "air_conditioner") ? "air conditioner" : undefined,
+    hasAppliance(appliances, "water_pump") ? "water pump" : undefined,
+    hasAppliance(appliances, "freezer") ? "freezer" : undefined,
+  ].filter(isDefined);
 
-  return `Designed around a ${runtimeBand.label}, but actual backup time depends on ${dependencyText}.`;
-}
-
-function buildGoalPhrase(goal: EstimateGoalId) {
-  switch (goal) {
-    case "blackout_backup":
-      return "keep your home running during blackouts";
-    case "lower_bill":
-      return "lower your electricity bill";
-    case "both":
-      return "balance backup and bill reduction";
-    case "unsure":
-      return "compare practical starter options";
-  }
-}
-
-function buildHeavyLoadNote(appliances: readonly EstimateApplianceId[]) {
-  if (hasAppliance(appliances, "air_conditioner")) {
-    return " AC size and startup load should be checked before purchase.";
+  if (cautionLoads.length > 0) {
+    return `${capitalizeFirst(
+      formatList(cautionLoads),
+    )} included. These loads can need extra starting power, so a final check is still needed before choosing equipment.`;
   }
 
-  if (hasAppliance(appliances, "water_pump")) {
-    return " Pump horsepower and startup load should be checked before purchase.";
-  }
-
-  if (hasAppliance(appliances, "freezer")) {
-    return " Freezer wattage and startup load should be checked before purchase.";
-  }
-
-  return "";
+  return undefined;
 }
 
 function buildWhyThisFits(
   band: RecommendationBandConfig,
   answers: NormalizedRecommendationAnswers,
-  runtimeBand: RuntimeBandConfig,
-  budgetBand: BudgetBandConfig,
-  dataset: RecommendationDataset,
 ) {
-  if (band.id === "custom_appliance") {
-    return band.whyTemplate;
+  if (hasAppliance(answers.appliances, "other")) {
+    return "This includes your custom appliance, but final sizing may change once its wattage is confirmed.";
   }
 
-  const applianceSummary = buildApplianceSummary(answers.appliances, dataset);
-  const heavyLoadNote =
-    band.id === "48v_larger_backup"
-      ? buildHeavyLoadNote(answers.appliances)
-      : "";
-
-  return `Because you selected ${applianceSummary} for ${runtimeBand.label} and want to ${buildGoalPhrase(
-    answers.goal,
-  )}, this uses the ${budgetBand.label} as a planning signal. ${band.whyTemplate}${heavyLoadNote}`;
+  return band.whyTemplate;
 }
 
 function buildShortExplanation(
@@ -398,19 +353,19 @@ export function getRecommendation(
 
   return {
     recommendationId: band.recommendationId,
-    title: band.title,
+    recommendationTitle: band.recommendationTitle,
+    title: band.recommendationTitle,
     systemSizeLabel: band.systemSizeLabel,
-    batteryLabel: buildBatteryLabel(band, normalizedAnswers),
+    batteryLabel: band.batteryLabel,
     inverterLabel: band.inverterLabel,
     solarPanelLabel: band.solarPanelLabel,
-    expectedBackupDirection: buildExpectedBackupDirection(band, runtimeBand),
+    backupLabel: buildBackupLabel(runtimeBand),
     whyThisFits: buildWhyThisFits(
       band,
       normalizedAnswers,
-      runtimeBand,
-      budgetBand,
-      dataset,
     ),
+    goodFor: buildGoodFor(band, normalizedAnswers, dataset),
+    cautionNote: buildCautionNote(normalizedAnswers.appliances),
     shortExplanation: buildShortExplanation(band, budgetBand),
     practicalStartingPoint: band.practicalStartingPoint,
     disclaimer: practicalEstimateDisclaimer,

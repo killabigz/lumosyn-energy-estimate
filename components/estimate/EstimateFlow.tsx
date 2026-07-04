@@ -276,7 +276,7 @@ export function EstimateFlow() {
       runtime: estimate.runtime,
       timeline: estimate.timeline,
       recommendationId: nextRecommendation.recommendationId,
-      recommendationTitle: nextRecommendation.title,
+      recommendationTitle: nextRecommendation.recommendationTitle,
       systemSizeLabel: nextRecommendation.systemSizeLabel,
       batteryLabel: nextRecommendation.batteryLabel,
       inverterLabel: nextRecommendation.inverterLabel,
@@ -418,7 +418,6 @@ export function EstimateFlow() {
         {recommendation ? (
           <RecommendationResult
             appliances={estimate.appliances}
-            goal={estimate.goal}
             headingRef={headingRef}
             name={estimate.name}
             otherAppliance={isOtherApplianceSelected ? otherAppliance : ""}

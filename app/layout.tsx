@@ -61,7 +61,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" data-scroll-behavior="smooth">
-      <body className="lumosyn-background min-h-dvh bg-background text-foreground antialiased">
+      <body
+        className="lumosyn-background min-h-dvh bg-background text-foreground antialiased"
+        suppressHydrationWarning
+      >
         <script
           dangerouslySetInnerHTML={{ __html: keyboardNavigationScript }}
           id="keyboard-navigation-mode"

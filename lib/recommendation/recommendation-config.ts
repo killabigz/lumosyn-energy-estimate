@@ -203,65 +203,49 @@ export const recommendationConfig = {
     {
       id: "12v_starter",
       recommendationId: "module10-12v-starter-backup-range",
-      title: "12V starter backup range",
-      systemSizeLabel: "12V starter range - good for small essentials",
-      inverterLabel: "Approx. 600W-1.5kW pure sine inverter range",
-      batteryLabel: "Approx. 1-2 kWh battery reserve",
-      solarPanelLabel: "Approx. 400W-800W starter recharge range",
+      recommendationTitle: "12V Starter Backup",
+      systemSizeLabel: "12V Starter Backup",
+      inverterLabel: "600W-1.5kW",
+      batteryLabel: "12V battery bank",
+      solarPanelLabel: "1-3 panels",
       practicalStartingPoint:
         "Begin with lights, internet, TV, and fan before adding larger appliances.",
-      expectedBackupDirection:
-        "Designed around your selected runtime, but actual backup time depends on appliance wattage and usage.",
+      defaultGoodFor: ["Lights", "Wi-Fi", "TV", "Fan"],
       whyTemplate:
-        "This points toward a small essentials setup instead of a refrigerator or pump-ready range.",
+        "This fits because your selected appliances are small essentials for short backup.",
     },
     {
       id: "24v_home_essentials",
       recommendationId: "module10-24v-home-essentials-backup-range",
-      title: "24V home essentials backup range",
-      systemSizeLabel:
-        "24V home essentials range - good for refrigerator and small essentials",
-      inverterLabel: "Approx. 2kW-3kW pure sine inverter range",
-      batteryLabel: "Approx. 3-5 kWh battery reserve",
-      solarPanelLabel: "Approx. 800W-1.5kW recharge range",
+      recommendationTitle: "24V Home Essentials",
+      systemSizeLabel: "24V Home Essentials",
+      inverterLabel: "2-3kW",
+      batteryLabel: "24V battery bank",
+      solarPanelLabel: "4-6 panels",
       practicalStartingPoint:
         "Plan around the refrigerator and smaller daily essentials first.",
-      expectedBackupDirection:
-        "Designed around your selected runtime, but actual backup time depends on appliance wattage and usage.",
+      defaultGoodFor: ["Refrigerator", "TV", "Lights", "Wi-Fi", "Fan"],
       whyTemplate:
-        "This points toward a home essentials backup setup instead of a tiny starter system.",
+        "This fits because your selected appliances match a home essentials backup setup.",
     },
     {
       id: "48v_larger_backup",
       recommendationId: "module10-48v-larger-backup-planning-range",
-      title: "48V larger backup planning range",
-      systemSizeLabel:
-        "48V larger backup range - good for heavier appliances and longer backup planning",
-      inverterLabel: "Approx. 3kW-5kW+ pure sine inverter range",
-      batteryLabel: "Approx. 5-10 kWh+ battery reserve",
-      solarPanelLabel: "Approx. 1.5kW-3kW+ recharge range",
+      recommendationTitle: "48V Larger Backup Planning",
+      systemSizeLabel: "48V Larger Backup Planning",
+      inverterLabel: "5kW class",
+      batteryLabel: "48V battery bank",
+      solarPanelLabel: "6-10+ panels",
       practicalStartingPoint:
         "Use this as a cautious planning range for heavier loads before purchase decisions.",
-      expectedBackupDirection:
-        "Designed around your selected runtime, but actual backup time depends on appliance wattage and startup load.",
+      defaultGoodFor: [
+        "Air Conditioner",
+        "Water Pump",
+        "Freezer",
+        "Refrigerator",
+      ],
       whyTemplate:
-        "This points toward a larger backup planning range because heavier appliances need more cautious sizing.",
-    },
-    {
-      id: "custom_appliance",
-      recommendationId: "module10-custom-appliance-planning-range",
-      title: "Custom appliance planning range",
-      systemSizeLabel:
-        "Starting direction: 24V or 48V depending on selected appliances, runtime, and budget",
-      inverterLabel: "Range depends on the appliance wattage and startup load",
-      batteryLabel: "Reserve depends on how long the appliance runs",
-      solarPanelLabel: "Recharge range depends on verified load size",
-      practicalStartingPoint:
-        "Appliance wattage check recommended before purchase.",
-      expectedBackupDirection:
-        "Designed around your selected runtime, but actual backup time depends on appliance wattage and usage.",
-      whyTemplate:
-        "Because you added another appliance, Lumosyn would need the wattage or model before sizing the setup. For now, this gives you a cautious planning direction.",
+        "This fits because AC, pumps, freezers, or longer runtime need a stronger backup starting point.",
     },
   ],
   timelineStages: [

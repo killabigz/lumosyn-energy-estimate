@@ -4,7 +4,6 @@ import { useState, type Ref } from "react";
 import {
   ArrowRight,
   Battery,
-  Camera,
   CheckCircle2,
   Clock3,
   Heart,
@@ -66,6 +65,14 @@ export function RecommendationResult({
     otherAppliance,
     recommendation.goodFor,
   );
+  const mergedCautionNote = recommendation.cautionNote?.startsWith(
+    "Custom appliance included",
+  )
+    ? undefined
+    : recommendation.cautionNote;
+  const whyText = mergedCautionNote
+    ? `${recommendation.whyThisFits} ${mergedCautionNote}`
+    : recommendation.whyThisFits;
   const starterCards: RecommendationCard[] = [
     {
       icon: Zap,
@@ -109,14 +116,6 @@ export function RecommendationResult({
         <h2 className="text-4xl font-semibold leading-tight tracking-normal text-accent sm:text-5xl">
           {recommendation.recommendationTitle}
         </h2>
-        {saveStatus === "saved" && (
-          <p
-            aria-live="polite"
-            className="text-sm font-semibold text-secondary"
-          >
-            Estimate saved.
-          </p>
-        )}
         {saveStatus === "failed" && (
           <p
             aria-live="polite"
@@ -152,23 +151,22 @@ export function RecommendationResult({
         <div className="flex items-center gap-2">
           <CheckCircle2 aria-hidden="true" className="size-5 text-accent" />
           <h3 className="text-lg font-semibold text-foreground">
-            Why this fits
+            Why we recommended this
           </h3>
         </div>
-        <p className="text-base leading-7 text-muted">
-          {recommendation.whyThisFits}
-        </p>
+        <p className="text-base leading-6 text-muted">{whyText}</p>
       </section>
 
       {goodForList.length > 0 && (
-        <section className="grid gap-3">
+        <section className="grid gap-2">
           <h3 className="text-base font-semibold text-foreground">Good for:</h3>
-          <ul className="grid grid-cols-2 gap-2">
+          <ul className="flex flex-wrap gap-2">
             {goodForList.map((appliance) => (
               <li
-                className="rounded-card border border-border bg-surface-soft px-3 py-2 text-sm font-semibold text-foreground"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-soft px-2.5 py-1 text-xs font-semibold text-foreground"
                 key={appliance}
               >
+                <CheckCircle2 aria-hidden="true" className="size-3 text-accent" />
                 {appliance}
               </li>
             ))}
@@ -176,21 +174,10 @@ export function RecommendationResult({
         </section>
       )}
 
-      {recommendation.cautionNote && (
-        <p className="rounded-card border border-border bg-background/70 p-3 text-sm leading-6 text-secondary">
-          {recommendation.cautionNote}
-        </p>
-      )}
-
-      <div className="grid gap-2 border-t border-border pt-4">
-        <div className="flex items-center gap-2">
-          <Camera aria-hidden="true" className="size-5 text-accent" />
-          <h3 className="text-lg font-semibold text-foreground">
-            Save this recommendation
-          </h3>
-        </div>
-        <p className="text-base leading-7 text-muted">
-          Take a screenshot so you can refer back to it later.
+      <div className="border-t border-border pt-3">
+        <p className="text-sm font-semibold leading-6 text-foreground">
+          <span aria-hidden="true">{"\u{1F4F8}"}</span> Take a screenshot to
+          save this recommendation.
         </p>
       </div>
 
@@ -216,34 +203,33 @@ export function RecommendationResult({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 rounded-card border border-growth/40 bg-surface-soft p-4">
+        <div className="grid gap-3 rounded-card border border-growth/40 bg-surface-soft p-4">
           <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Heart aria-hidden="true" className="size-5 text-accent" />
-              <h3 className="text-lg font-semibold text-foreground">
-                Thanks for trusting Lumosyn.
-              </h3>
-            </div>
-            <p className="text-base leading-7 text-muted">
-              We hope this helped you better understand your next energy step.
+            <h3 className="text-base font-semibold text-foreground">
+              <span aria-hidden="true">{"\u{1F49B}"}</span> Thanks for using
+              Lumosyn.
+            </h3>
+            <p className="text-sm leading-6 text-muted">
+              We hope this gave you a clearer idea of your next energy step.
             </p>
           </div>
           <p className="text-sm leading-6 text-secondary">
-            {recommendation.disclaimer}
+            This is a starting estimate. Final equipment may change after
+            reviewing your home and appliances.
           </p>
-          <div className="grid gap-3 sm:flex sm:items-center sm:justify-end">
+          <div className="grid grid-cols-2 gap-3">
             <button
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-large border border-border bg-surface px-6 py-3 text-base font-semibold text-foreground outline-none transition hover:border-accent/60 hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-large border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-foreground outline-none transition hover:border-accent/60 hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               onClick={() => setIsDone(true)}
               type="button"
             >
-              No thanks, I&apos;m done
+              I&apos;m Done
             </button>
             <ButtonLink
-              className="gap-2 sm:w-fit"
+              className="min-h-11 gap-2 px-4 py-2.5 text-sm"
               href="/why-lumosyn-exists"
             >
-              Read Our Story
+              Continue
               <ArrowRight aria-hidden="true" className="size-4" />
             </ButtonLink>
           </div>

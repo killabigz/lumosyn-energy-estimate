@@ -305,7 +305,7 @@ function buildGoodFor(
 
 function buildCautionNote(appliances: readonly EstimateApplianceId[]) {
   if (hasAppliance(appliances, "other")) {
-    return "Custom appliance included. We included your custom appliance in this starting point. Final sizing may change once its wattage is confirmed.";
+    return "Custom appliance included; final sizing may change once its wattage is confirmed.";
   }
 
   const cautionLoads = [
@@ -317,7 +317,7 @@ function buildCautionNote(appliances: readonly EstimateApplianceId[]) {
   if (cautionLoads.length > 0) {
     return `${capitalizeFirst(
       formatList(cautionLoads),
-    )} included. These loads can need extra starting power, so a final check is still needed before choosing equipment.`;
+    )} included, so final equipment should still be confirmed before installation.`;
   }
 
   return undefined;

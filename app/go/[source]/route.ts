@@ -47,13 +47,13 @@ function getCampaignSource(source: string) {
 export async function GET(request: Request, { params }: GoRouteContext) {
   const { source } = await params;
   const campaignSource = getCampaignSource(source);
-  const estimateUrl = new URL("/estimate", request.url);
+  const landingUrl = new URL("/", request.url);
 
-  estimateUrl.search = new URLSearchParams({
+  landingUrl.search = new URLSearchParams({
     utm_source: campaignSource.utm_source,
     utm_medium: campaignSource.utm_medium,
     utm_campaign: CAMPAIGN_NAME,
   }).toString();
 
-  return NextResponse.redirect(estimateUrl);
+  return NextResponse.redirect(landingUrl);
 }

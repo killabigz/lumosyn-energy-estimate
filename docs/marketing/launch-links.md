@@ -1,6 +1,6 @@
 # Lumosyn Launch Links
 
-Use these clean links while the custom domain and real WhatsApp Cloud API phone number are paused.
+Use these clean links while the custom domain and real WhatsApp Cloud API phone number are paused. Each link sends people to the Lumosyn homepage first so they see the first screen before starting the estimate questions.
 
 Production base URL:
 
@@ -20,23 +20,31 @@ https://lumosyn-energy-estimate.vercel.app
 
 ## Hidden UTM Mapping
 
-Each clean link redirects into `/estimate` with campaign tracking already attached.
+Each clean link redirects to `/` with campaign tracking already attached. The homepage `Start My Free Estimate` button carries those UTM values into `/estimate` when the customer starts the flow.
 
 | Clean link | Redirect target |
 | --- | --- |
-| `/go/tiktok` | `/estimate?utm_source=tiktok&utm_medium=bio&utm_campaign=launch_v1` |
-| `/go/instagram` | `/estimate?utm_source=instagram&utm_medium=bio&utm_campaign=launch_v1` |
-| `/go/facebook` | `/estimate?utm_source=facebook&utm_medium=post&utm_campaign=launch_v1` |
-| `/go/whatsapp` | `/estimate?utm_source=whatsapp&utm_medium=status&utm_campaign=launch_v1` |
-| `/go/direct` | `/estimate?utm_source=direct&utm_medium=manual&utm_campaign=launch_v1` |
-| Unknown `/go/[source]` | `/estimate?utm_source=direct&utm_medium=unknown&utm_campaign=launch_v1` |
+| `/go/tiktok` | `/?utm_source=tiktok&utm_medium=bio&utm_campaign=launch_v1` |
+| `/go/instagram` | `/?utm_source=instagram&utm_medium=bio&utm_campaign=launch_v1` |
+| `/go/facebook` | `/?utm_source=facebook&utm_medium=post&utm_campaign=launch_v1` |
+| `/go/whatsapp` | `/?utm_source=whatsapp&utm_medium=status&utm_campaign=launch_v1` |
+| `/go/direct` | `/?utm_source=direct&utm_medium=manual&utm_campaign=launch_v1` |
+| Unknown `/go/[source]` | `/?utm_source=direct&utm_medium=unknown&utm_campaign=launch_v1` |
 
-Existing tracking still preserves `utm_content`, `utm_term`, and `landing_page` when those values are present on supported estimate links.
+Existing tracking still preserves `utm_content`, `utm_term`, and `landing_page` when those values are present on supported links.
+
+Example homepage handoff:
+
+```text
+/?utm_source=tiktok&utm_medium=bio&utm_campaign=launch_v1
+```
+
+The homepage button opens `/estimate` with those same campaign values. The estimate URL may also include `landing_page` so Supabase can store the original landing page.
 
 ## Lead Capture Test
 
 - A. Open `/go/tiktok`
-- B. Confirm it redirects to the estimate flow
+- B. Confirm it redirects to the Lumosyn homepage
 - C. Complete one test estimate
 - D. Confirm a customer row exists
 - E. Confirm an assessment row exists

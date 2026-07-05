@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Ref } from "react";
+import { useEffect, useState, type Ref } from "react";
 import {
   ArrowRight,
   Battery,
@@ -59,6 +59,7 @@ export function RecommendationResult({
   saveStatus,
 }: RecommendationResultProps) {
   const [isDone, setIsDone] = useState(false);
+  const [showSoftReminder, setShowSoftReminder] = useState(false);
   const firstName = name.trim();
   const goodForList = buildGoodForList(
     appliances,
@@ -95,6 +96,14 @@ export function RecommendationResult({
       value: runtime || recommendation.backupLabel,
     },
   ];
+
+  useEffect(() => {
+    const reminderTimer = window.setTimeout(() => {
+      setShowSoftReminder(true);
+    }, 8000);
+
+    return () => window.clearTimeout(reminderTimer);
+  }, []);
 
   return (
     <div className="grid gap-5">
@@ -174,11 +183,16 @@ export function RecommendationResult({
         </section>
       )}
 
-      <div className="border-t border-border pt-3">
+      <div className="grid gap-1 border-t border-border pt-3">
         <p className="text-sm font-semibold leading-6 text-foreground">
-          <span aria-hidden="true">{"\u{1F4F8}"}</span> Take a screenshot to
-          save this recommendation.
+          <span aria-hidden="true">{"\u{1F4F8}"}</span> Screenshot this
+          recommendation so you can find it later.
         </p>
+        {showSoftReminder && (
+          <p aria-live="polite" className="text-xs leading-5 text-secondary">
+            Still here? Screenshot this recommendation so you can keep it.
+          </p>
+        )}
       </div>
 
       {isDone ? (

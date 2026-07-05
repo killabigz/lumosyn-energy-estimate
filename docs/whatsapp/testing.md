@@ -17,6 +17,18 @@ WHATSAPP_ENABLED=false
 
 Do not expose WhatsApp values with `NEXT_PUBLIC_`.
 
+## Paused Production Sending
+
+Real WhatsApp sending is paused until Lumosyn gets a dedicated WhatsApp Cloud API number.
+
+Current safe status:
+
+```env
+WHATSAPP_ENABLED=false
+```
+
+This means estimates still save, customers still enter a WhatsApp number, no automatic WhatsApp message is sent, and follow-up can happen later after Meta phone number setup is complete.
+
 ## Webhook Callback URL
 
 After deployment, set the Meta webhook callback URL to:

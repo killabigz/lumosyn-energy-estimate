@@ -20,6 +20,7 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] No public read policies are added to lead/customer tables.
 - [ ] Service-role access is used only inside server routes and server-only modules.
 - [ ] Any `lead_assessments` view remains secured and not public.
+- [ ] The `lead_assessments` view is used only for internal/server-side HQ access.
 - [ ] Reporting/export workflows avoid exposing phone numbers or free-text fields unless needed.
 - [ ] A backup/export process is defined before scale.
 - [ ] A deletion/anonymization process is defined before scale.
@@ -60,4 +61,8 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] Server API errors do not expose secrets or stack traces.
 - [ ] Production logs avoid printing request payloads containing contact info.
 - [ ] Admin/HQ access control is designed before internal lead dashboards are exposed.
+- [ ] `/hq` and `/hq/*` remain protected before any customer data is rendered.
+- [ ] HQ credentials are stored only in environment variables.
+- [ ] HQ credentials are not committed to the repo or exposed in screenshots.
+- [ ] Customer data is not exposed client-side outside protected HQ surfaces.
 - [ ] Mobile wrapper SDKs and permissions are reviewed before app store submission.

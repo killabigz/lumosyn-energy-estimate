@@ -8,6 +8,7 @@ import type {
   EstimateRuntimeId,
   EstimateTimelineId,
   JourneyStage,
+  NormalizedApplianceQuantities,
   NormalizedRecommendationAnswers,
   Recommendation,
   RecommendationAnswers,
@@ -17,6 +18,22 @@ import type {
   RuntimeBandConfig,
 } from "./types";
 
+const applianceQuantityMinimum = 1;
+const applianceQuantityMaximum = 10;
+const lowBasicAppliances: readonly EstimateApplianceId[] = [
+  "lights",
+  "tv",
+  "wifi",
+  "fan",
+];
+const coldStorageAppliances: readonly EstimateApplianceId[] = [
+  "refrigerator",
+  "freezer",
+];
+const heavySurgeAppliances: readonly EstimateApplianceId[] = [
+  "air_conditioner",
+  "water_pump",
+];
 const practicalEstimateDisclaimer =
   "This is a starting estimate, not a final system design. Final sizing may change after reviewing appliance wattage, usage time, and site conditions.";
 
@@ -57,6 +74,10 @@ function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
 }
 
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function normalizeAppliances(
   appliances: readonly string[],
   dataset: RecommendationDataset,
@@ -68,6 +89,76 @@ function normalizeAppliances(
     .filter(isDefined);
 
   return Array.from(new Set(normalizedAppliances));
+}
+
+function clampApplianceQuantity(quantity: number) {
+  return Math.min(
+    applianceQuantityMaximum,
+    Math.max(applianceQuantityMinimum, quantity),
+  );
+}
+
+function normalizeApplianceQuantity(value: unknown) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < applianceQuantityMinimum
+  ) {
+    return applianceQuantityMinimum;
+  }
+
+  return clampApplianceQuantity(value);
+}
+
+function normalizeSelectedApplianceQuantities(
+  appliances: readonly EstimateApplianceId[],
+  applianceQuantities: Readonly<Record<string, unknown>> | null | undefined,
+  dataset: RecommendationDataset,
+): NormalizedApplianceQuantities {
+  const selectedAppliances = new Set(appliances);
+  const rawQuantitiesByAppliance = new Map<EstimateApplianceId, unknown>();
+
+  if (isRecord(applianceQuantities)) {
+    for (const [applianceLabel, quantity] of Object.entries(
+      applianceQuantities,
+    )) {
+      const appliance = findAnswerId(
+        applianceLabel,
+        dataset.answerOptions.appliances,
+      );
+
+      if (appliance && selectedAppliances.has(appliance)) {
+        rawQuantitiesByAppliance.set(appliance, quantity);
+      }
+    }
+  }
+
+  return appliances.reduce<Partial<Record<EstimateApplianceId, number>>>(
+    (quantities, appliance) => {
+      quantities[appliance] = normalizeApplianceQuantity(
+        rawQuantitiesByAppliance.get(appliance),
+      );
+
+      return quantities;
+    },
+    {},
+  );
+}
+
+export function normalizeApplianceQuantities(
+  appliances: readonly string[],
+  applianceQuantities:
+    | Readonly<Record<string, unknown>>
+    | null
+    | undefined,
+  dataset: RecommendationDataset = recommendationConfig,
+): NormalizedApplianceQuantities {
+  return normalizeSelectedApplianceQuantities(
+    normalizeAppliances(appliances, dataset),
+    applianceQuantities,
+    dataset,
+  );
 }
 
 function classifyApplianceLoadGroups(
@@ -88,6 +179,11 @@ export function normalizeRecommendationAnswers(
   dataset: RecommendationDataset = recommendationConfig,
 ): NormalizedRecommendationAnswers {
   const appliances = normalizeAppliances(answers.appliances, dataset);
+  const applianceQuantities = normalizeSelectedApplianceQuantities(
+    appliances,
+    answers.applianceQuantities ?? answers.appliance_quantities,
+    dataset,
+  );
 
   return {
     goal: normalizeAnswer(
@@ -101,6 +197,7 @@ export function normalizeRecommendationAnswers(
       dataset.answerOptions.unknownBudgetId,
     ),
     appliances,
+    applianceQuantities,
     applianceGroups: classifyApplianceLoadGroups(appliances, dataset),
     runtime: normalizeAnswer(
       answers.runtime,
@@ -144,17 +241,153 @@ function isLimitedStarterBudget(budget: EstimateBudgetId) {
   return budget === "under_250k" || budget === "250k_500k";
 }
 
+type FortyEightVoltPlanningRange =
+  | "ordinary"
+  | "higher_quantity"
+  | "very_heavy";
+
+type QuantityLoadProfile = {
+  airConditionerQuantity: number;
+  coldStorageQuantity: number;
+  freezerQuantity: number;
+  hasHighMixedHouseholdLoad: boolean;
+  hasMultipleColdStorage: boolean;
+  hasOnlyLowBasicQuantityPressure: boolean;
+  hasQuantityPressure: boolean;
+  heavySurgeQuantity: number;
+  knownQuantity: number;
+  lowBasicQuantity: number;
+  otherQuantity: number;
+  planningRange: FortyEightVoltPlanningRange;
+  refrigeratorQuantity: number;
+  totalQuantity: number;
+  waterPumpQuantity: number;
+};
+
+function getApplianceQuantity(
+  quantities: NormalizedApplianceQuantities,
+  appliance: EstimateApplianceId,
+) {
+  return quantities[appliance] ?? 0;
+}
+
+function sumApplianceQuantities(
+  quantities: NormalizedApplianceQuantities,
+  matches: readonly EstimateApplianceId[],
+) {
+  return matches.reduce(
+    (total, appliance) => total + getApplianceQuantity(quantities, appliance),
+    0,
+  );
+}
+
+function buildQuantityLoadProfile(
+  answers: NormalizedRecommendationAnswers,
+): QuantityLoadProfile {
+  const lowBasicQuantity = sumApplianceQuantities(
+    answers.applianceQuantities,
+    lowBasicAppliances,
+  );
+  const coldStorageQuantity = sumApplianceQuantities(
+    answers.applianceQuantities,
+    coldStorageAppliances,
+  );
+  const heavySurgeQuantity = sumApplianceQuantities(
+    answers.applianceQuantities,
+    heavySurgeAppliances,
+  );
+  const airConditionerQuantity = getApplianceQuantity(
+    answers.applianceQuantities,
+    "air_conditioner",
+  );
+  const waterPumpQuantity = getApplianceQuantity(
+    answers.applianceQuantities,
+    "water_pump",
+  );
+  const refrigeratorQuantity = getApplianceQuantity(
+    answers.applianceQuantities,
+    "refrigerator",
+  );
+  const freezerQuantity = getApplianceQuantity(
+    answers.applianceQuantities,
+    "freezer",
+  );
+  const otherQuantity = getApplianceQuantity(
+    answers.applianceQuantities,
+    "other",
+  );
+  const totalQuantity = answers.appliances.reduce(
+    (total, appliance) =>
+      total + getApplianceQuantity(answers.applianceQuantities, appliance),
+    0,
+  );
+  const knownQuantity = totalQuantity - otherQuantity;
+  const coldStorageTypeCount = countAppliances(
+    answers.appliances,
+    coldStorageAppliances,
+  );
+  const hasMultipleColdStorage =
+    coldStorageTypeCount > 0 && coldStorageQuantity >= 2;
+  const hasOnlyLowBasicQuantityPressure =
+    answers.applianceGroups.length === 1 &&
+    includesGroup(answers.applianceGroups, "low_basic") &&
+    lowBasicQuantity >= 6;
+  const hasHighMixedHouseholdLoad =
+    knownQuantity >= 7 && (coldStorageQuantity > 0 || heavySurgeQuantity > 0);
+  const hasHeavyQuantityPressure =
+    airConditionerQuantity >= 2 ||
+    waterPumpQuantity >= 2 ||
+    heavySurgeQuantity >= 2;
+  const hasQuantityPressure =
+    hasOnlyLowBasicQuantityPressure ||
+    hasMultipleColdStorage ||
+    hasHighMixedHouseholdLoad ||
+    hasHeavyQuantityPressure;
+  const isVeryHeavy =
+    (airConditionerQuantity >= 2 &&
+      waterPumpQuantity >= 2 &&
+      freezerQuantity >= 1) ||
+    (heavySurgeQuantity >= 4 && coldStorageQuantity >= 2) ||
+    (heavySurgeQuantity >= 3 && freezerQuantity >= 2);
+  const isHigherQuantity =
+    !isVeryHeavy &&
+    (airConditionerQuantity >= 2 ||
+      waterPumpQuantity >= 2 ||
+      (heavySurgeQuantity >= 2 && coldStorageQuantity >= 1) ||
+      (heavySurgeQuantity >= 1 && knownQuantity >= 5) ||
+      coldStorageQuantity >= 3);
+
+  return {
+    airConditionerQuantity,
+    coldStorageQuantity,
+    freezerQuantity,
+    hasHighMixedHouseholdLoad,
+    hasMultipleColdStorage,
+    hasOnlyLowBasicQuantityPressure,
+    hasQuantityPressure,
+    heavySurgeQuantity,
+    knownQuantity,
+    lowBasicQuantity,
+    otherQuantity,
+    planningRange: isVeryHeavy
+      ? "very_heavy"
+      : isHigherQuantity
+        ? "higher_quantity"
+        : "ordinary",
+    refrigeratorQuantity,
+    totalQuantity,
+    waterPumpQuantity,
+  };
+}
+
 function chooseRecommendationBand(
   answers: NormalizedRecommendationAnswers,
+  quantityProfile: QuantityLoadProfile = buildQuantityLoadProfile(answers),
 ): RecommendationBandId {
   const applianceCount = answers.appliances.length;
   const hasCustomLoad = includesGroup(answers.applianceGroups, "custom_unknown");
   const hasHeavyLoad = includesGroup(answers.applianceGroups, "heavy_surge");
   const hasColdStorage = includesGroup(answers.applianceGroups, "cold_storage");
-  const coldStorageCount = countAppliances(answers.appliances, [
-    "refrigerator",
-    "freezer",
-  ]);
   const onlyLowBasicLoads =
     applianceCount > 0 &&
     answers.applianceGroups.length === 1 &&
@@ -166,22 +399,26 @@ function chooseRecommendationBand(
     return "48v_larger_backup";
   }
 
+  if (
+    quantityProfile.hasMultipleColdStorage ||
+    quantityProfile.hasHighMixedHouseholdLoad
+  ) {
+    return "48v_larger_backup";
+  }
+
   if (hasFreezer && longerRuntime) {
     return "48v_larger_backup";
   }
 
-  if (
-    coldStorageCount > 1 &&
-    longerRuntime &&
-    answers.budget === "over_1m"
-  ) {
+  if (quantityProfile.coldStorageQuantity > 1 && longerRuntime) {
     return "48v_larger_backup";
   }
 
   if (
     onlyLowBasicLoads &&
     answers.runtime === "short_backup" &&
-    isLimitedStarterBudget(answers.budget)
+    isLimitedStarterBudget(answers.budget) &&
+    !quantityProfile.hasOnlyLowBasicQuantityPressure
   ) {
     return "12v_starter";
   }
@@ -195,7 +432,8 @@ function chooseRecommendationBand(
   }
 
   if (onlyLowBasicLoads && answers.runtime === "short_backup") {
-    return answers.budget === "over_1m"
+    return answers.budget === "over_1m" ||
+      quantityProfile.hasOnlyLowBasicQuantityPressure
       ? "24v_home_essentials"
       : "12v_starter";
   }
@@ -303,30 +541,124 @@ function buildGoodFor(
   return selectedLabels.length > 0 ? selectedLabels : band.defaultGoodFor;
 }
 
-function buildCautionNote(appliances: readonly EstimateApplianceId[]) {
-  if (hasAppliance(appliances, "other")) {
-    return "Custom appliance included; final sizing may change once its wattage is confirmed.";
+function buildSizingLabels(
+  band: RecommendationBandConfig,
+  quantityProfile: QuantityLoadProfile,
+) {
+  if (band.id !== "48v_larger_backup") {
+    return {
+      batteryLabel: band.batteryLabel,
+      inverterLabel: band.inverterLabel,
+      solarPanelLabel: band.solarPanelLabel,
+    };
+  }
+
+  if (quantityProfile.planningRange === "very_heavy") {
+    return {
+      batteryLabel: "Larger 48V battery bank recommended",
+      inverterLabel: "8kW+ planning range",
+      solarPanelLabel: "10-14+ panels planning range",
+    };
+  }
+
+  if (quantityProfile.planningRange === "higher_quantity") {
+    return {
+      batteryLabel: "48V battery bank, larger reserve recommended",
+      inverterLabel: "5kW-8kW planning range",
+      solarPanelLabel: "8-12+ panels planning range",
+    };
+  }
+
+  return {
+    batteryLabel: band.batteryLabel,
+    inverterLabel: band.inverterLabel,
+    solarPanelLabel: band.solarPanelLabel,
+  };
+}
+
+function buildCautionNote(
+  answers: NormalizedRecommendationAnswers,
+  quantityProfile: QuantityLoadProfile,
+) {
+  const cautionNotes: string[] = [];
+  const coldStorageQuantityCaution =
+    quantityProfile.heavySurgeQuantity > 0
+      ? "Multiple cold-storage or motor-based appliances need stronger planning than a small essentials setup."
+      : "Multiple cold-storage appliances need stronger planning than a small essentials setup.";
+
+  if (quantityProfile.planningRange === "very_heavy") {
+    cautionNotes.push(
+      "Multiple AC units, pumps, or freezer loads can create higher startup demand, so this should be treated as a larger 48V planning case.",
+    );
+  } else if (quantityProfile.planningRange === "higher_quantity") {
+    if (quantityProfile.heavySurgeQuantity >= 2) {
+      cautionNotes.push(
+        "Multiple AC units or pumps can create higher startup demand, so this should be treated as a larger 48V planning case.",
+      );
+    } else {
+      cautionNotes.push(coldStorageQuantityCaution);
+    }
+  } else if (quantityProfile.hasMultipleColdStorage) {
+    cautionNotes.push(coldStorageQuantityCaution);
+  } else if (quantityProfile.hasHighMixedHouseholdLoad) {
+    cautionNotes.push(
+      "Higher-quantity mixed household loads should be checked carefully before equipment is selected.",
+    );
   }
 
   const cautionLoads = [
-    hasAppliance(appliances, "air_conditioner") ? "air conditioner" : undefined,
-    hasAppliance(appliances, "water_pump") ? "water pump" : undefined,
-    hasAppliance(appliances, "freezer") ? "freezer" : undefined,
+    hasAppliance(answers.appliances, "air_conditioner")
+      ? "air conditioner"
+      : undefined,
+    hasAppliance(answers.appliances, "water_pump") ? "water pump" : undefined,
+    hasAppliance(answers.appliances, "freezer") ? "freezer" : undefined,
   ].filter(isDefined);
 
-  if (cautionLoads.length > 0) {
-    return `${capitalizeFirst(
-      formatList(cautionLoads),
-    )} included, so final equipment should still be confirmed before installation.`;
+  if (cautionNotes.length === 0 && cautionLoads.length > 0) {
+    cautionNotes.push(
+      `${capitalizeFirst(
+        formatList(cautionLoads),
+      )} included, so this should be checked carefully.`,
+    );
   }
 
-  return undefined;
+  if (hasAppliance(answers.appliances, "other")) {
+    cautionNotes.push(
+      "Custom appliance included; final sizing may change once its wattage is confirmed.",
+    );
+  }
+
+  if (cautionNotes.length === 0) {
+    return undefined;
+  }
+
+  return `${cautionNotes.join(
+    " ",
+  )} This is still a starting estimate. Final equipment should be confirmed before installation.`;
 }
 
 function buildWhyThisFits(
   band: RecommendationBandConfig,
   answers: NormalizedRecommendationAnswers,
+  quantityProfile: QuantityLoadProfile,
 ) {
+  if (band.id === "48v_larger_backup") {
+    if (quantityProfile.planningRange === "very_heavy") {
+      return "Because you selected multiple AC, pump, and freezer or cold-storage loads, this needs a larger 48V planning range than a small essentials setup.";
+    }
+
+    if (quantityProfile.planningRange === "higher_quantity") {
+      return "Because you selected multiple motor-based or cold-storage appliances, this needs stronger 48V planning than a small essentials setup.";
+    }
+
+    if (
+      quantityProfile.hasMultipleColdStorage ||
+      quantityProfile.hasHighMixedHouseholdLoad
+    ) {
+      return "Because you selected multiple cold-storage or higher-quantity household loads, this should be treated as larger backup planning.";
+    }
+  }
+
   if (hasAppliance(answers.appliances, "other")) {
     return "This includes your custom appliance, but final sizing may change once its wattage is confirmed.";
   }
@@ -346,8 +678,10 @@ export function getRecommendation(
   dataset: RecommendationDataset = recommendationConfig,
 ): Recommendation {
   const normalizedAnswers = normalizeRecommendationAnswers(answers, dataset);
-  const bandId = chooseRecommendationBand(normalizedAnswers);
+  const quantityProfile = buildQuantityLoadProfile(normalizedAnswers);
+  const bandId = chooseRecommendationBand(normalizedAnswers, quantityProfile);
   const band = getRecommendationBand(bandId, dataset);
+  const sizingLabels = buildSizingLabels(band, quantityProfile);
   const runtimeBand = getRuntimeBand(normalizedAnswers.runtime, dataset);
   const budgetBand = getBudgetBand(normalizedAnswers.budget, dataset);
 
@@ -356,16 +690,17 @@ export function getRecommendation(
     recommendationTitle: band.recommendationTitle,
     title: band.recommendationTitle,
     systemSizeLabel: band.systemSizeLabel,
-    batteryLabel: band.batteryLabel,
-    inverterLabel: band.inverterLabel,
-    solarPanelLabel: band.solarPanelLabel,
+    batteryLabel: sizingLabels.batteryLabel,
+    inverterLabel: sizingLabels.inverterLabel,
+    solarPanelLabel: sizingLabels.solarPanelLabel,
     backupLabel: buildBackupLabel(runtimeBand),
     whyThisFits: buildWhyThisFits(
       band,
       normalizedAnswers,
+      quantityProfile,
     ),
     goodFor: buildGoodFor(band, normalizedAnswers, dataset),
-    cautionNote: buildCautionNote(normalizedAnswers.appliances),
+    cautionNote: buildCautionNote(normalizedAnswers, quantityProfile),
     shortExplanation: buildShortExplanation(band, budgetBand),
     practicalStartingPoint: band.practicalStartingPoint,
     disclaimer: practicalEstimateDisclaimer,

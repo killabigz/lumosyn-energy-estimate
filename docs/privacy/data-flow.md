@@ -55,8 +55,9 @@ When the visitor completes the last step, `EstimateFlow` calls `getRecommendatio
 The recommendation engine:
 
 - Normalizes answer labels into stable IDs.
+- Normalizes selected appliance quantities when present, defaulting missing quantities to `1`.
 - Groups appliances into load groups.
-- Chooses a recommendation band.
+- Uses appliance quantities to influence the recommendation band, 48V planning range, and caution wording.
 - Builds inverter, battery, solar, and backup labels.
 - Maps timeline to a journey stage.
 
@@ -68,6 +69,7 @@ Payload includes:
 
 - Contact fields
 - Estimate answers
+- Appliance quantities for selected appliances
 - Recommendation output labels
 - Tracking context
 - Browser referrer when available

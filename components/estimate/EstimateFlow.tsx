@@ -569,10 +569,12 @@ export function EstimateFlow({
     }
 
     if (activeQuestion === totalQuestions) {
+      const applianceQuantities = buildSelectedApplianceQuantities(estimate);
       const nextRecommendation = getRecommendation({
         goal: estimate.goal,
         budget: estimate.budget,
         appliances: estimate.appliances,
+        applianceQuantities,
         runtime: estimate.runtime,
         timeline: estimate.timeline,
       });

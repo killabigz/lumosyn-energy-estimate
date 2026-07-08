@@ -109,16 +109,18 @@ Current load groups:
 
 Selection assumptions:
 
+- Module 17 uses appliance quantities when present. Missing or null quantities default to `1` for backward compatibility with older assessments and old-style estimate submissions.
+- Quantity normalization only counts selected appliances, defaults invalid values to `1`, and clamps unusually high values to `10`.
 - Heavy/surge loads generally push to `48v_larger_backup`.
 - Freezer plus longer runtime pushes to `48v_larger_backup`.
-- Multiple cold-storage loads with longer runtime and high budget push to `48v_larger_backup`.
-- Low/basic loads with short runtime and limited budget can use `12v_starter`.
+- Multiple cold-storage quantities push toward `48v_larger_backup`.
+- Multiple AC units, multiple pumps, or high mixed household quantities strengthen 48V planning labels and caution wording.
+- Very heavy AC, pump, and freezer quantity combinations use an `8kW+ planning range` style output.
+- Low/basic loads with short runtime, limited budget, and small quantities can use `12v_starter`.
 - Cold storage or custom loads generally use `24v_home_essentials` unless heavier rules apply.
 - Unknown labels fall back to safe configured defaults.
 
 Every recommendation is a starting estimate, not a final system design. Final sizing depends on appliance wattage, usage time, and site conditions.
-
-The recommendation engine remains quantity-agnostic for Module 16. It continues to use the existing `appliances` array as the selected-appliance source.
 
 ## Deployment Steps
 
@@ -147,6 +149,10 @@ The recommendation engine remains quantity-agnostic for Module 16. It continues 
 - `Other` appliance requires custom text.
 - Selected appliance quantities default to 1, can increase/decrease, cannot go below 1, and are removed when the appliance is deselected.
 - Recommendation appears after final step.
+- Refrigerator x1, Fan x2, and Wi-Fi x1 returns a 24V-style recommendation.
+- Air Conditioner x1 and Refrigerator x1 returns a 48V-style recommendation.
+- Air Conditioner x2 and Water Pump x1 returns stronger 48V planning wording.
+- Air Conditioner x2, Water Pump x2, and Freezer x2 returns the strongest 48V planning range.
 - Failed save state does not hide the recommendation.
 - API creates a new customer for a new WhatsApp number.
 - API updates an existing customer for a repeated WhatsApp number.

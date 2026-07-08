@@ -2,9 +2,11 @@ export { recommendationConfig } from "./recommendation-config";
 export {
   getRecommendation,
   mapTimelineToJourneyStage,
+  normalizeApplianceQuantities,
   normalizeRecommendationAnswers,
 } from "./recommendation-engine";
 export type {
+  ApplianceQuantities,
   ApplianceLoadGroupId,
   EstimateApplianceId,
   EstimateBudgetId,
@@ -12,6 +14,7 @@ export type {
   EstimateRuntimeId,
   EstimateTimelineId,
   JourneyStage,
+  NormalizedApplianceQuantities,
   NormalizedRecommendationAnswers,
   Recommendation,
   RecommendationAnswers,

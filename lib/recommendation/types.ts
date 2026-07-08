@@ -54,10 +54,18 @@ export type AnswerOption<T extends string> = {
   labels: readonly string[];
 };
 
+export type ApplianceQuantities = Readonly<Record<string, number>>;
+
+export type NormalizedApplianceQuantities = Readonly<
+  Partial<Record<EstimateApplianceId, number>>
+>;
+
 export type RecommendationAnswers = {
   goal: string;
   budget: string;
   appliances: readonly string[];
+  applianceQuantities?: ApplianceQuantities | null;
+  appliance_quantities?: ApplianceQuantities | null;
   runtime?: string;
   timeline?: string;
 };
@@ -66,6 +74,7 @@ export type NormalizedRecommendationAnswers = {
   goal: EstimateGoalId;
   budget: EstimateBudgetId;
   appliances: readonly EstimateApplianceId[];
+  applianceQuantities: NormalizedApplianceQuantities;
   applianceGroups: readonly ApplianceLoadGroupId[];
   runtime: EstimateRuntimeId;
   timeline?: EstimateTimelineId;

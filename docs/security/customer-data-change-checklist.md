@@ -36,3 +36,12 @@ or lead data.
 - [x] No client-side Supabase customer/lead read added.
 - [x] No new environment variables or secrets added.
 - [x] Privacy, data-flow, rebuild, and Supabase documentation updated.
+
+### Module 17: Quantity-Aware Recommendation Engine
+
+- [x] Reads `appliance_quantities` for recommendation logic when present.
+- [x] No new customer data field added.
+- [x] No public lead API added.
+- [x] No client-side customer/lead database read added.
+- [x] No new environment variables or secrets added.
+- [x] Privacy docs reviewed.

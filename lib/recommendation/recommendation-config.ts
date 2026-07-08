@@ -1,7 +1,7 @@
 import type { RecommendationDataset } from "./types";
 
 export const recommendationConfig = {
-  version: "module-10-v1",
+  version: "module-17-v1",
   fallbackRecommendationBandId: "24v_home_essentials",
   answerOptions: {
     goals: [

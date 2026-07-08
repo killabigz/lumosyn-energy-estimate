@@ -65,6 +65,7 @@ export const getHqOverview = cache(async (): Promise<HqOverview> => {
           "community_status",
           "goal",
           "appliances",
+          "appliance_quantities",
           "runtime",
           "budget",
           "timeline",

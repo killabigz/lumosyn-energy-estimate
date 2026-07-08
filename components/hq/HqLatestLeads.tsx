@@ -1,4 +1,5 @@
 import { CheckCircle2, Circle, MinusCircle } from "lucide-react";
+import { formatAppliancesWithQuantities } from "@/lib/hq/applianceDisplay";
 import type { LeadAssessmentRow } from "@/lib/hq/types";
 
 function formatDate(value: string) {
@@ -22,10 +23,6 @@ function formatWhatsApp(value: string) {
     3,
     6,
   )}-${localDigits.slice(6)}`;
-}
-
-function formatList(values: string[] | null) {
-  return values?.filter(Boolean).join(", ") || "None listed";
 }
 
 function formatSource(lead: LeadAssessmentRow) {
@@ -112,7 +109,16 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 
 function LeadMobileCard({ lead }: { lead: LeadAssessmentRow }) {
   const details = [
-    ["Appliances", formatList(lead.appliances)],
+    [
+      "Appliances",
+      formatAppliancesWithQuantities(
+        lead.appliances,
+        lead.appliance_quantities,
+        {
+          includeSingleQuantities: true,
+        },
+      ),
+    ],
     ["Runtime", lead.runtime],
     ["Budget", lead.budget],
     ["Date", formatDate(lead.assessment_created_at)],
@@ -260,7 +266,13 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
                   {lead.goal}
                 </td>
                 <td className="max-w-56 border-b border-border/70 px-3 py-4">
-                  {formatList(lead.appliances)}
+                  {formatAppliancesWithQuantities(
+                    lead.appliances,
+                    lead.appliance_quantities,
+                    {
+                      includeSingleQuantities: true,
+                    },
+                  )}
                 </td>
                 <td className="border-b border-border/70 px-3 py-4">
                   {lead.runtime}

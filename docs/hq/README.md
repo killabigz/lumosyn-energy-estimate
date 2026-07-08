@@ -25,10 +25,12 @@ credential values to the repo.
 - The latest 25 assessment records from the internal lead assessment view.
 - Customer name, WhatsApp number, source, estimate answers, journey stage,
   recommendation, community status, and latest-assessment flag.
+- Appliance quantities are displayed when `appliance_quantities` is available,
+  while old assessments with null quantity data may show appliance names only.
 - Desktop and tablet screens use the full summary card grid and readable latest
   leads table.
 - Phone-sized screens use a compact overview card followed by mobile lead cards
-  for quick review after future push notifications.
+  designed for quick phone review after future push notifications.
 
 ## Why It Is Read-Only
 

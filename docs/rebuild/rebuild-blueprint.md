@@ -82,6 +82,7 @@ Rebuild in this order:
 - Previous latest assessments for the same customer are marked `is_latest=false`.
 - New assessment rows are inserted with `is_latest=true`.
 - Assessment rows store nullable `appliance_quantities` JSON/object data keyed by selected appliance label. Existing or imported assessment rows may have `null` in this field.
+- HQ should display appliance quantities from `appliance_quantities` when available, while retaining the names-only display for old rows without quantity data.
 - Timeline maps to journey stage:
   - `As soon as possible` -> `Ready`
   - `Within 3 months` -> `Planning`

@@ -45,3 +45,12 @@ or lead data.
 - [x] No client-side customer/lead database read added.
 - [x] No new environment variables or secrets added.
 - [x] Privacy docs reviewed.
+
+### Module 18: HQ Quantity Display
+
+- [x] Reads existing `appliance_quantities` for HQ display only.
+- [x] No new customer data field added.
+- [x] No schema change added.
+- [x] No public lead API added.
+- [x] No client-side customer/lead read added.
+- [x] Privacy/security docs reviewed.

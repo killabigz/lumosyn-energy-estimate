@@ -1,5 +1,8 @@
+export type ApplianceQuantities = Record<string, number>;
+
 export type LeadAssessmentRow = {
   appliances: string[] | null;
+  appliance_quantities: ApplianceQuantities | null;
   assessment_created_at: string;
   assessment_id: string;
   battery_label: string | null;

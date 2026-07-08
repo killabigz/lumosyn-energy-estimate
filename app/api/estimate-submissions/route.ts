@@ -10,6 +10,10 @@ import {
 const GENERIC_ERROR = "Unable to save estimate right now.";
 const JAMAICAN_WHATSAPP_PATTERN = /^876\d{7}$/;
 const WHATSAPP_OPT_IN_SOURCE = "estimate_submission";
+const APPLIANCE_QUANTITY_MINIMUM = 1;
+const APPLIANCE_QUANTITY_MAXIMUM = 10;
+
+type ApplianceQuantities = Record<string, number>;
 
 type EstimateSubmissionPayload = {
   name: string;
@@ -18,6 +22,7 @@ type EstimateSubmissionPayload = {
   goal: string;
   budget: string;
   appliances: string[];
+  appliance_quantities: ApplianceQuantities | null;
   other_appliance: string | null;
   runtime: string;
   timeline: string;
@@ -78,6 +83,51 @@ function getRequiredAppliances(body: Record<string, unknown>) {
   return appliances.length > 0 ? appliances : undefined;
 }
 
+function clampApplianceQuantity(quantity: number) {
+  return Math.min(
+    APPLIANCE_QUANTITY_MAXIMUM,
+    Math.max(APPLIANCE_QUANTITY_MINIMUM, quantity),
+  );
+}
+
+function getOptionalApplianceQuantities(
+  body: Record<string, unknown>,
+  appliances: string[],
+) {
+  const value = body.appliance_quantities;
+
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const quantities: ApplianceQuantities = {};
+
+  for (const appliance of appliances) {
+    const rawQuantity = value[appliance];
+
+    if (rawQuantity === undefined || rawQuantity === null) {
+      quantities[appliance] = APPLIANCE_QUANTITY_MINIMUM;
+      continue;
+    }
+
+    if (
+      typeof rawQuantity !== "number" ||
+      !Number.isFinite(rawQuantity) ||
+      !Number.isInteger(rawQuantity)
+    ) {
+      return undefined;
+    }
+
+    quantities[appliance] = clampApplianceQuantity(rawQuantity);
+  }
+
+  return quantities;
+}
+
 function normalizeJamaicanWhatsApp(value: string) {
   const digits = value.replace(/\D/g, "");
   const localNumber =
@@ -108,6 +158,9 @@ function parseSubmissionPayload(
   const goal = getRequiredText(body, "goal");
   const budget = getRequiredText(body, "budget");
   const appliances = getRequiredAppliances(body);
+  const applianceQuantities = appliances
+    ? getOptionalApplianceQuantities(body, appliances)
+    : undefined;
   const otherAppliance = getOptionalText(body, "otherAppliance");
   const runtime = getRequiredText(body, "runtime");
   const timeline = getRequiredText(body, "timeline");
@@ -125,6 +178,7 @@ function parseSubmissionPayload(
     !goal ||
     !budget ||
     !appliances ||
+    applianceQuantities === undefined ||
     !runtime ||
     !timeline ||
     !recommendationId ||
@@ -145,6 +199,7 @@ function parseSubmissionPayload(
     goal,
     budget,
     appliances,
+    appliance_quantities: applianceQuantities,
     other_appliance: otherAppliance,
     runtime,
     timeline,
@@ -264,6 +319,7 @@ async function createAssessment(
     .from("assessments")
     .insert({
       appliances: payload.appliances,
+      appliance_quantities: payload.appliance_quantities,
       battery_label: payload.battery_label,
       budget: payload.budget,
       customer_id: customerId,

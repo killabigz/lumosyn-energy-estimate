@@ -41,6 +41,7 @@ No cookies or localStorage are added for this tracking handoff.
 
 - Goal
 - Appliances
+- Appliance quantities for selected appliances
 - Optional custom appliance when `Other` is selected
 - Runtime
 - Budget
@@ -92,6 +93,7 @@ After resolving the customer, the API:
 - Sets existing latest assessments for that customer to `is_latest=false`.
 - Inserts a new `assessments` row with `is_latest=true`.
 - Saves estimate answers, recommendation labels, journey stage, source, UTM values, landing page, and referrer.
+- Saves appliance quantities with assessment data when provided by the estimate flow.
 
 This preserves assessment history while making it easy to find the newest assessment.
 

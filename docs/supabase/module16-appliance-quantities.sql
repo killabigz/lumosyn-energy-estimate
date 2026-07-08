@@ -1,6 +1,15 @@
--- Module 15: Lumosyn HQ V1 lead assessment view.
--- Internal/server-side HQ usage only. Do not grant public or client read access.
+-- Module 16: Appliance quantity data contract.
+-- Adds optional assessment-level quantities while keeping appliances as the
+-- backward-compatible source list.
 
+alter table public.assessments
+add column if not exists appliance_quantities jsonb;
+
+comment on column public.assessments.appliance_quantities is
+  'Stores selected appliance quantities as a JSON object. Keys should match selected appliance labels, values are positive integers, and old assessments may have null appliance_quantities.';
+
+-- Keep the internal/server-side HQ reporting view aligned when it exists.
+-- Do not grant public or client read access.
 create or replace view public.lead_assessments
 with (security_invoker = on)
 as

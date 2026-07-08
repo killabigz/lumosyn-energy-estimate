@@ -24,3 +24,15 @@ or lead data.
 - [ ] Any new secret is documented without exposing its value.
 - [ ] Any temporary token seen in a screenshot or shared context is treated as
   exposed and not reused.
+
+## Completed Module Notes
+
+### Module 16: Appliance Quantities
+
+- [x] Touches assessment data by adding `assessments.appliance_quantities`.
+- [x] Stores selected appliance quantities as user-provided estimate context.
+- [x] Access remains server-side/internal only through the existing estimate API and secured HQ data path.
+- [x] No public lead API added.
+- [x] No client-side Supabase customer/lead read added.
+- [x] No new environment variables or secrets added.
+- [x] Privacy, data-flow, rebuild, and Supabase documentation updated.

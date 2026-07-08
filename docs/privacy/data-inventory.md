@@ -11,7 +11,7 @@ Primary user-provided data:
 - Name
 - WhatsApp number
 - Optional email
-- Estimate answers: goal, appliances, custom appliance, runtime, budget, and timeline
+- Estimate answers: goal, appliances, appliance quantities, custom appliance, runtime, budget, and timeline
 
 Primary derived or system-generated data:
 
@@ -61,6 +61,7 @@ The current `/api/estimate-submissions` route does not write the legacy `estimat
 | `customer_id` | `assessments.customer_id` | `7b8f...` | Links assessment to customer. | System-generated relation | Yes | Delete/anonymize with customer row; cascade delete is defined in schema. | Identifier linking user content to contact info. |
 | `goal` | `assessments.goal` | `Both` | Captures what the visitor wants solar/backup to help with. | User-provided | Yes | Keep while useful for recommendation/support; review stale leads after 12-24 months. | User Content/Other Data. |
 | `appliances` | `assessments.appliances` | `{Lights, Refrigerator, Wi-Fi}` | Captures appliances the visitor wants to run. | User-provided | Yes | Keep while useful for recommendation/support; review stale leads after 12-24 months. | User Content/Other Data; may imply home energy needs. |
+| `appliance_quantities` | `assessments.appliance_quantities` | JSON/object: `{"Fan": 2, "TV": 1}` | Stores selected appliance quantities to improve estimate context and future recommendation accuracy. | User-provided through quantity controls | Yes, because it is stored with assessment/customer data | Same as assessment data; keep while useful for recommendation/support and delete/anonymize with customer deletion. | User Content/Other Data; user-provided estimate preference/energy planning data. |
 | `other_appliance` | `assessments.other_appliance` | `Medical device` | Captures custom appliance text when `Other` is selected. | User-provided | Yes | Minimize and review carefully; may contain sensitive free text; delete on request. | User Content/Other Data; free text may need extra disclosure caution. |
 | `runtime` | `assessments.runtime` | `5-8 hours` | Captures desired backup duration. | User-provided | Yes | Keep while useful for recommendation/support. | User Content/Other Data. |
 | `budget` | `assessments.budget` | `JMD $250,000-500,000` | Captures planning budget band. | User-provided | Yes | Keep while useful for recommendation/support; review stale leads. | User Content/Other Data; financial preference, not payment data. |

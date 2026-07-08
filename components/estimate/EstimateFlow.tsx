@@ -43,6 +43,9 @@ const appliances = [
   "Other",
 ];
 
+const applianceQuantityMinimum = 1;
+const applianceQuantityMaximum = 10;
+
 const timelines = [
   "As soon as possible",
   "Within 3 months",
@@ -54,10 +57,13 @@ const totalQuestions = 6;
 
 type FieldName = "name" | "whatsapp" | "email";
 
+type ApplianceQuantities = Record<string, number>;
+
 type EstimateState = {
   goal: string;
   budget: string;
   appliances: string[];
+  applianceQuantities: ApplianceQuantities;
   runtime: string;
   timeline: string;
   name: string;
@@ -72,6 +78,7 @@ type EstimateSubmissionRequest = {
   goal: string;
   budget: string;
   appliances: string[];
+  appliance_quantities: ApplianceQuantities;
   otherAppliance: string;
   runtime: string;
   timeline: string;
@@ -98,6 +105,7 @@ const initialEstimate: EstimateState = {
   goal: "",
   budget: "",
   appliances: [],
+  applianceQuantities: {},
   runtime: "",
   timeline: "",
   name: "",
@@ -142,6 +150,26 @@ function isSuccessfulSaveResponse(value: unknown) {
     value !== null &&
     "ok" in value &&
     value.ok === true
+  );
+}
+
+function clampApplianceQuantity(quantity: number) {
+  return Math.min(
+    applianceQuantityMaximum,
+    Math.max(applianceQuantityMinimum, quantity),
+  );
+}
+
+function buildSelectedApplianceQuantities(estimate: EstimateState) {
+  return estimate.appliances.reduce<ApplianceQuantities>(
+    (quantities, appliance) => {
+      quantities[appliance] = clampApplianceQuantity(
+        estimate.applianceQuantities[appliance] ?? applianceQuantityMinimum,
+      );
+
+      return quantities;
+    },
+    {},
   );
 }
 
@@ -190,6 +218,65 @@ function ChoiceButton({
     >
       {label}
     </button>
+  );
+}
+
+function ApplianceChoice({
+  isSelected,
+  label,
+  onDecrease,
+  onIncrease,
+  onToggle,
+  quantity,
+}: {
+  isSelected: boolean;
+  label: string;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  onToggle: () => void;
+  quantity: number;
+}) {
+  if (!isSelected) {
+    return <ChoiceButton isSelected={false} label={label} onClick={onToggle} />;
+  }
+
+  return (
+    <div className="grid gap-3 rounded-card border border-accent bg-accent-soft p-3 text-foreground">
+      <button
+        aria-pressed={isSelected}
+        className="min-h-11 rounded-card px-1 text-left text-base font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        onClick={onToggle}
+        type="button"
+      >
+        {label}
+      </button>
+      <div
+        aria-label={`${label} quantity`}
+        className="flex items-center justify-between gap-3 rounded-full border border-accent/40 bg-surface px-2 py-2"
+      >
+        <button
+          aria-label={`Decrease ${label} quantity`}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-2xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={quantity <= applianceQuantityMinimum}
+          onClick={onDecrease}
+          type="button"
+        >
+          -
+        </button>
+        <span className="min-w-8 text-center text-lg font-semibold tabular-nums">
+          {quantity}
+        </span>
+        <button
+          aria-label={`Increase ${label} quantity`}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-2xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={quantity >= applianceQuantityMaximum}
+          onClick={onIncrease}
+          type="button"
+        >
+          +
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -329,6 +416,7 @@ export function EstimateFlow({
       goal: estimate.goal,
       budget: estimate.budget,
       appliances: estimate.appliances,
+      appliance_quantities: buildSelectedApplianceQuantities(estimate),
       otherAppliance: isOtherApplianceSelected ? otherAppliance.trim() : "",
       runtime: estimate.runtime,
       timeline: estimate.timeline,
@@ -410,12 +498,46 @@ export function EstimateFlow({
       return {
         ...current,
         appliances: nextAppliances,
+        applianceQuantities: isSelected
+          ? Object.fromEntries(
+              Object.entries(current.applianceQuantities).filter(
+                ([key]) => key !== appliance,
+              ),
+            )
+          : {
+              ...current.applianceQuantities,
+              [appliance]: applianceQuantityMinimum,
+            },
       };
     });
 
     if (isDeselectingOther) {
       setShowOtherApplianceError(false);
     }
+  }
+
+  function adjustApplianceQuantity(appliance: string, change: -1 | 1) {
+    setEstimate((current) => {
+      if (!current.appliances.includes(appliance)) {
+        return current;
+      }
+
+      const currentQuantity =
+        current.applianceQuantities[appliance] ?? applianceQuantityMinimum;
+      const nextQuantity = clampApplianceQuantity(currentQuantity + change);
+
+      if (nextQuantity === currentQuantity) {
+        return current;
+      }
+
+      return {
+        ...current,
+        applianceQuantities: {
+          ...current.applianceQuantities,
+          [appliance]: nextQuantity,
+        },
+      };
+    });
   }
 
   function chooseSingle(
@@ -522,14 +644,29 @@ export function EstimateFlow({
                     Which appliances would you like to keep running?
                   </h1>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {appliances.map((appliance) => (
-                      <ChoiceButton
-                        isSelected={estimate.appliances.includes(appliance)}
-                        key={appliance}
-                        label={appliance}
-                        onClick={() => toggleAppliance(appliance)}
-                      />
-                    ))}
+                    {appliances.map((appliance) => {
+                      const isSelected =
+                        estimate.appliances.includes(appliance);
+                      const quantity =
+                        estimate.applianceQuantities[appliance] ??
+                        applianceQuantityMinimum;
+
+                      return (
+                        <ApplianceChoice
+                          isSelected={isSelected}
+                          key={appliance}
+                          label={appliance}
+                          onDecrease={() =>
+                            adjustApplianceQuantity(appliance, -1)
+                          }
+                          onIncrease={() =>
+                            adjustApplianceQuantity(appliance, 1)
+                          }
+                          onToggle={() => toggleAppliance(appliance)}
+                          quantity={quantity}
+                        />
+                      );
+                    })}
                   </div>
                   {isOtherApplianceSelected && (
                     <div className="grid gap-2">

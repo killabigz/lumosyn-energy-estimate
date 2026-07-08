@@ -39,6 +39,8 @@ For a clean rebuild, run SQL in this order:
 1. `docs/supabase/module9-customers-assessments.sql`
 2. `docs/supabase/module11-traffic-analytics.sql`
 3. `docs/supabase/module12-whatsapp-consent.sql`
+4. `docs/supabase/module16-appliance-quantities.sql`
+5. `docs/supabase/module15-lead-assessments-view.sql`
 
 Notes:
 
@@ -73,11 +75,13 @@ Rebuild in this order:
 - WhatsApp input is normalized to a 10-digit Jamaican local number such as `8765550123`.
 - A leading `1` country code is accepted and stripped for stored customer matching.
 - `Other` appliance requires custom appliance text.
+- Selected appliances may include quantity controls. Quantities default to `1`, are limited to a practical range, and are saved separately from the existing `appliances` array.
 - A customer is deduplicated by `customers.whatsapp`.
 - Existing customers are updated with latest name, email, and journey stage.
 - Each completed estimate creates a new assessment row.
 - Previous latest assessments for the same customer are marked `is_latest=false`.
 - New assessment rows are inserted with `is_latest=true`.
+- Assessment rows store nullable `appliance_quantities` JSON/object data keyed by selected appliance label. Existing or imported assessment rows may have `null` in this field.
 - Timeline maps to journey stage:
   - `As soon as possible` -> `Ready`
   - `Within 3 months` -> `Planning`
@@ -114,6 +118,8 @@ Selection assumptions:
 
 Every recommendation is a starting estimate, not a final system design. Final sizing depends on appliance wattage, usage time, and site conditions.
 
+The recommendation engine remains quantity-agnostic for Module 16. It continues to use the existing `appliances` array as the selected-appliance source.
+
 ## Deployment Steps
 
 1. Install dependencies with `npm install`.
@@ -139,6 +145,7 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - `/estimate` completes all six steps.
 - Invalid Jamaican WhatsApp numbers cannot continue.
 - `Other` appliance requires custom text.
+- Selected appliance quantities default to 1, can increase/decrease, cannot go below 1, and are removed when the appliance is deselected.
 - Recommendation appears after final step.
 - Failed save state does not hide the recommendation.
 - API creates a new customer for a new WhatsApp number.
@@ -146,6 +153,7 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - API creates a new assessment each time.
 - Previous latest assessments become `is_latest=false`.
 - UTM/source/landing/referrer values save to `assessments`.
+- `appliance_quantities` saves beside `appliances` after the Module 16 SQL migration has been applied.
 - `/go/[source]` redirects to homepage with expected UTM values.
 - WhatsApp send remains skipped while `WHATSAPP_ENABLED=false`.
 - WhatsApp webhook verification rejects wrong tokens.

@@ -12,6 +12,8 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] `NEXT_PUBLIC_` is used only for values that are safe to expose publicly.
 - [ ] Actual env values are not pasted into docs, issues, screenshots, support chats, or PR descriptions.
 - [ ] Temporary Meta tokens from screenshots are not reused.
+- [ ] HQ credentials are stored only in environment variables.
+- [ ] No `NEXT_PUBLIC_` HQ credential variables exist.
 
 ## Supabase
 
@@ -19,8 +21,11 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] RLS remains enabled on `assessments`.
 - [ ] No public read policies are added to lead/customer tables.
 - [ ] Service-role access is used only inside server routes and server-only modules.
+- [ ] `lead_assessments` is internal only.
 - [ ] Any `lead_assessments` view remains secured and not public.
 - [ ] The `lead_assessments` view is used only for internal/server-side HQ access.
+- [ ] No client-side lead/customer reads are added.
+- [ ] No public lead APIs are added.
 - [ ] Reporting/export workflows avoid exposing phone numbers or free-text fields unless needed.
 - [ ] A backup/export process is defined before scale.
 - [ ] A deletion/anonymization process is defined before scale.
@@ -50,6 +55,7 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] A privacy policy page is created before broad launch or mobile submission.
 - [ ] A user data deletion/request process exists.
 - [ ] A retention schedule exists for inactive leads.
+- [ ] Customer data changes require the audit checklist in `docs/security/customer-data-change-checklist.md`.
 - [ ] Free-text `other_appliance` values are reviewed for minimization risk.
 - [ ] Legacy `estimate_submissions` is checked, migrated, or removed if no longer needed.
 - [ ] Test records are deleted or clearly separated from production lead data.
@@ -58,11 +64,15 @@ This checklist is a technical readiness aid. It is not legal advice.
 
 - [ ] `npm run lint` passes before deployment.
 - [ ] `npm run build` passes before deployment.
+- [ ] `npm audit` is reviewed periodically and documented before dependency upgrades.
 - [ ] Server API errors do not expose secrets or stack traces.
 - [ ] Production logs avoid printing request payloads containing contact info.
 - [ ] Admin/HQ access control is designed before internal lead dashboards are exposed.
+- [ ] `/hq` is protected by Basic Auth.
 - [ ] `/hq` and `/hq/*` remain protected before any customer data is rendered.
+- [ ] `/hq` fails closed when credentials are missing.
 - [ ] HQ credentials are stored only in environment variables.
 - [ ] HQ credentials are not committed to the repo or exposed in screenshots.
 - [ ] Customer data is not exposed client-side outside protected HQ surfaces.
+- [ ] Future team access moves beyond shared Basic Auth.
 - [ ] Mobile wrapper SDKs and permissions are reviewed before app store submission.

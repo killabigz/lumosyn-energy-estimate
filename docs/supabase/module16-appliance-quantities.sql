@@ -8,8 +8,11 @@ add column if not exists appliance_quantities jsonb;
 comment on column public.assessments.appliance_quantities is
   'Stores selected appliance quantities as a JSON object. Keys should match selected appliance labels, values are positive integers, and old assessments may have null appliance_quantities.';
 
--- Keep the internal/server-side HQ reporting view aligned when it exists.
+-- Recreate the internal/server-side HQ reporting view so Supabase can add the
+-- new column without relying on create or replace view column-order changes.
 -- Do not grant public or client read access.
+drop view if exists public.lead_assessments;
+
 create or replace view public.lead_assessments
 with (security_invoker = on)
 as

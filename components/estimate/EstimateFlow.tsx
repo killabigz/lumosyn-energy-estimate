@@ -241,10 +241,10 @@ function ApplianceChoice({
   }
 
   return (
-    <div className="grid gap-3 rounded-card border border-accent bg-accent-soft p-3 text-foreground">
+    <div className="flex min-h-14 items-center justify-between gap-3 rounded-card border border-accent bg-accent-soft px-3 py-1.5 text-foreground">
       <button
         aria-pressed={isSelected}
-        className="min-h-11 rounded-card px-1 text-left text-base font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="min-h-10 min-w-0 flex-1 rounded-card pr-2 text-left text-base font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         onClick={onToggle}
         type="button"
       >
@@ -252,23 +252,23 @@ function ApplianceChoice({
       </button>
       <div
         aria-label={`${label} quantity`}
-        className="flex items-center justify-between gap-3 rounded-full border border-accent/40 bg-surface px-2 py-2"
+        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-accent/40 bg-surface p-0.5"
       >
         <button
           aria-label={`Decrease ${label} quantity`}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-2xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={quantity <= applianceQuantityMinimum}
           onClick={onDecrease}
           type="button"
         >
           -
         </button>
-        <span className="min-w-8 text-center text-lg font-semibold tabular-nums">
+        <span className="min-w-7 px-1 text-center text-base font-semibold tabular-nums">
           {quantity}
         </span>
         <button
           aria-label={`Increase ${label} quantity`}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-2xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xl font-semibold leading-none text-foreground transition hover:border-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={quantity >= applianceQuantityMaximum}
           onClick={onIncrease}
           type="button"

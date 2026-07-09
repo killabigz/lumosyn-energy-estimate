@@ -30,14 +30,20 @@ credential values to the repo.
 - Module 19 adds protected lead status, priority, internal notes, follow-up
   date/time, and mark-contacted support.
 - Desktop and tablet screens use the full summary card grid and readable latest
-  leads table with compact follow-up controls.
+  leads table with compact follow-up summaries by default.
 - Phone-sized screens use a compact overview card followed by mobile lead cards
-  with simple follow-up panels for fast phone review.
+  with compact follow-up summaries for fast phone review.
+- Editing opens protected follow-up controls only for the selected lead, keeping
+  both mobile cards and the desktop table readable.
 
 ## CRM Scope
 
 HQ CRM V1 is a light internal follow-up layer. It is not a full CRM yet.
 Internal notes are private and HQ-only.
+
+CRM controls are compact by default. The full status, priority, internal note,
+follow-up date/time, save, and mark-contacted controls open only when Daniel
+chooses to edit a lead.
 
 V1 intentionally does not include:
 

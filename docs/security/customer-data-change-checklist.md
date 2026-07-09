@@ -63,3 +63,10 @@ or lead data.
 - [x] No public lead API added.
 - [x] No client-side customer/lead Supabase read/write added.
 - [x] Privacy docs updated.
+
+### Module 19 Polish: Compact HQ CRM Controls
+
+- [x] Changed CRM presentation only.
+- [x] No new customer data fields added.
+- [x] No public lead API added.
+- [x] No client-side customer/lead database read/write added.

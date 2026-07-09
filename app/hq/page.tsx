@@ -43,7 +43,7 @@ export default async function HqPage() {
             </p>
           </div>
           <p className="inline-flex w-fit rounded-full border border-accent/30 bg-accent-soft px-3 py-1.5 text-xs font-semibold uppercase text-accent">
-            Read-only V1
+            HQ CRM V1
           </p>
         </header>
 

@@ -16,6 +16,10 @@ Campaign link
   -> Supabase customers
   -> Supabase assessments
 
+Protected /hq
+  -> HQ server action
+  -> Supabase assessments internal follow-up fields
+
 Meta WhatsApp webhook
   -> /api/whatsapp/webhook
   -> Supabase customers reply/status fields
@@ -98,6 +102,23 @@ After resolving the customer, the API:
 - Saves appliance quantities with assessment data when provided by the estimate flow.
 
 This preserves assessment history while making it easy to find the newest assessment.
+
+## Protected HQ Follow-Up Updates
+
+`/hq` is protected before rendering and loads customer-linked lead data
+server-side only. Module 19 adds a protected HQ server action that can update
+internal assessment follow-up fields:
+
+- `lead_status`
+- `lead_priority`
+- `internal_note`
+- `follow_up_at`
+- `last_contacted_at`
+- `lead_updated_at`
+
+These fields are for internal follow-up only. There is no public or
+customer-facing access to them, no public lead API is added, and client-side
+Supabase is not used for lead/customer reads or writes.
 
 ## WhatsApp Webhook To Customers Table
 

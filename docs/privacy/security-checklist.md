@@ -26,6 +26,8 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] The `lead_assessments` view is used only for internal/server-side HQ access.
 - [ ] No client-side lead/customer reads are added.
 - [ ] No public lead APIs are added.
+- [ ] Internal notes and follow-up fields are not exposed publicly.
+- [ ] HQ write actions remain protected.
 - [ ] Reporting/export workflows avoid exposing phone numbers or free-text fields unless needed.
 - [ ] A backup/export process is defined before scale.
 - [ ] A deletion/anonymization process is defined before scale.
@@ -75,4 +77,5 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] HQ credentials are not committed to the repo or exposed in screenshots.
 - [ ] Customer data is not exposed client-side outside protected HQ surfaces.
 - [ ] Future team access moves beyond shared Basic Auth.
+- [ ] Future team accounts add stronger auth and audit logs before multi-user CRM use.
 - [ ] Mobile wrapper SDKs and permissions are reviewed before app store submission.

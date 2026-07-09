@@ -39,8 +39,9 @@ For a clean rebuild, run SQL in this order:
 1. `docs/supabase/module9-customers-assessments.sql`
 2. `docs/supabase/module11-traffic-analytics.sql`
 3. `docs/supabase/module12-whatsapp-consent.sql`
-4. `docs/supabase/module16-appliance-quantities.sql`
-5. `docs/supabase/module15-lead-assessments-view.sql`
+4. `docs/supabase/module15-lead-assessments-view.sql`
+5. `docs/supabase/module16-appliance-quantities.sql`
+6. `docs/supabase/module19-lead-followup-fields.sql`
 
 Notes:
 
@@ -83,6 +84,7 @@ Rebuild in this order:
 - New assessment rows are inserted with `is_latest=true`.
 - Assessment rows store nullable `appliance_quantities` JSON/object data keyed by selected appliance label. Existing or imported assessment rows may have `null` in this field.
 - HQ should display appliance quantities from `appliance_quantities` when available, while retaining the names-only display for old rows without quantity data.
+- Module 19 adds light CRM/follow-up fields and protected HQ update actions for lead status, priority, internal notes, follow-up date/time, and mark-contacted state.
 - Timeline maps to journey stage:
   - `As soon as possible` -> `Ready`
   - `Within 3 months` -> `Planning`

@@ -54,3 +54,12 @@ or lead data.
 - [x] No public lead API added.
 - [x] No client-side customer/lead read added.
 - [x] Privacy/security docs reviewed.
+
+### Module 19: Lead Follow-Up Controls
+
+- [x] Adds internal follow-up fields to `assessments`.
+- [x] Touches customer-linked data.
+- [x] Access remains protected/server-side HQ only.
+- [x] No public lead API added.
+- [x] No client-side customer/lead Supabase read/write added.
+- [x] Privacy docs updated.

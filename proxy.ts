@@ -1,53 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-
-type BasicCredentials = {
-  password: string;
-  username: string;
-};
+import {
+  getConfiguredHqCredentials,
+  isValidHqBasicAuthorization,
+} from "@/lib/hq/basicAuth";
 
 const HQ_REALM = "Lumosyn HQ";
-
-function getConfiguredCredentials(): BasicCredentials | null {
-  const username = process.env.HQ_BASIC_AUTH_USER?.trim();
-  const password = process.env.HQ_BASIC_AUTH_PASSWORD?.trim();
-
-  if (!username || !password) {
-    return null;
-  }
-
-  return {
-    password,
-    username,
-  };
-}
-
-function parseBasicAuthorization(value: string | null): BasicCredentials | null {
-  if (!value) {
-    return null;
-  }
-
-  const [scheme, encodedCredentials] = value.split(" ");
-
-  if (scheme !== "Basic" || !encodedCredentials) {
-    return null;
-  }
-
-  try {
-    const decodedCredentials = atob(encodedCredentials);
-    const separatorIndex = decodedCredentials.indexOf(":");
-
-    if (separatorIndex < 0) {
-      return null;
-    }
-
-    return {
-      password: decodedCredentials.slice(separatorIndex + 1),
-      username: decodedCredentials.slice(0, separatorIndex),
-    };
-  } catch {
-    return null;
-  }
-}
 
 function unauthorizedResponse(message = "Authentication required.") {
   return new NextResponse(message, {
@@ -60,21 +17,11 @@ function unauthorizedResponse(message = "Authentication required.") {
 }
 
 export function proxy(request: NextRequest) {
-  const configuredCredentials = getConfiguredCredentials();
-
-  if (!configuredCredentials) {
+  if (!getConfiguredHqCredentials()) {
     return unauthorizedResponse("Lumosyn HQ is not configured.");
   }
 
-  const providedCredentials = parseBasicAuthorization(
-    request.headers.get("authorization"),
-  );
-
-  if (
-    !providedCredentials ||
-    providedCredentials.username !== configuredCredentials.username ||
-    providedCredentials.password !== configuredCredentials.password
-  ) {
+  if (!isValidHqBasicAuthorization(request.headers.get("authorization"))) {
     return unauthorizedResponse();
   }
 

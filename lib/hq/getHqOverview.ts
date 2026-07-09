@@ -79,6 +79,12 @@ export const getHqOverview = cache(async (): Promise<HqOverview> => {
           "utm_campaign",
           "source",
           "is_latest",
+          "lead_status",
+          "lead_priority",
+          "internal_note",
+          "last_contacted_at",
+          "follow_up_at",
+          "lead_updated_at",
         ].join(","),
       )
       .order("assessment_created_at", { ascending: false })

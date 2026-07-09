@@ -27,22 +27,24 @@ credential values to the repo.
   recommendation, community status, and latest-assessment flag.
 - Appliance quantities are displayed when `appliance_quantities` is available,
   while old assessments with null quantity data may show appliance names only.
+- Module 19 adds protected lead status, priority, internal notes, follow-up
+  date/time, and mark-contacted support.
 - Desktop and tablet screens use the full summary card grid and readable latest
-  leads table.
+  leads table with compact follow-up controls.
 - Phone-sized screens use a compact overview card followed by mobile lead cards
-  designed for quick phone review after future push notifications.
+  with simple follow-up panels for fast phone review.
 
-## Why It Is Read-Only
+## CRM Scope
 
-HQ V1 is visibility only. It helps Daniel review lead activity without adding
-CRM behavior before the privacy, retention, and operational processes are ready.
+HQ CRM V1 is a light internal follow-up layer. It is not a full CRM yet.
+Internal notes are private and HQ-only.
 
 V1 intentionally does not include:
 
-- Editing leads or customer records.
 - Deleting leads or customer records.
 - Exporting or backing up lead data.
-- CRM tasks, notes, owners, or pipeline actions.
+- Team accounts, owners, or assignment workflows.
+- Full CRM tasks or pipeline automation.
 - AI agent behavior.
 - WhatsApp sending or campaign automation.
 
@@ -51,6 +53,7 @@ V1 intentionally does not include:
 - `/hq` and any future `/hq/*` routes must remain protected server-side.
 - HQ credentials live only in environment variables.
 - Lead data is loaded server-side with the Supabase service-role client.
+- Lead follow-up writes must stay server-side and protected.
 - Lead data must not be fetched from client-side Supabase.
 - `SUPABASE_SERVICE_ROLE_KEY` must never be exposed to the browser.
 - `public.lead_assessments` is for internal/server-side HQ usage only.

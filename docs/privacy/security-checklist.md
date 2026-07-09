@@ -43,6 +43,14 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] Opt-in and opt-out replies are recorded accurately.
 - [ ] Opt-out status is respected before any future sending behavior is added.
 
+## Internal Alerts
+
+- [ ] Internal alerts are disabled by default unless operationally ready.
+- [ ] Internal alerts do not include full customer names, full WhatsApp numbers, exact budgets, internal notes, or private follow-up details.
+- [ ] Alert tokens stay in environment variables and are never committed.
+- [ ] Alert failures do not break lead capture.
+- [ ] Public notification topics are unguessable or protected.
+
 ## Tracking And Analytics
 
 - [ ] UTM/source tracking does not use cookies or localStorage.

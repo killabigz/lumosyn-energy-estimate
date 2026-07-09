@@ -15,6 +15,7 @@ Campaign link
   -> POST /api/estimate-submissions
   -> Supabase customers
   -> Supabase assessments
+  -> Optional privacy-safe internal alert
 
 Protected /hq
   -> HQ server action
@@ -102,6 +103,19 @@ After resolving the customer, the API:
 - Saves appliance quantities with assessment data when provided by the estimate flow.
 
 This preserves assessment history while making it easy to find the newest assessment.
+
+## New Assessment To Internal Alert
+
+After a new assessment saves successfully, Module 20 can trigger an optional
+server-side internal alert through a ntfy-compatible endpoint.
+
+The alert payload is intentionally privacy-safe. It may include the
+recommendation title, broad source, journey stage, selected appliance names with
+counts, and an optional `/hq` link. It must not include full customer name,
+WhatsApp number, internal notes, exact budget, or private follow-up details.
+
+Full lead/customer details remain inside protected `/hq`. Alert failures are
+best effort and must not break lead capture.
 
 ## Protected HQ Follow-Up Updates
 

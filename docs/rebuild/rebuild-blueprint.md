@@ -31,6 +31,12 @@ Do not commit real values.
 | `WHATSAPP_API_VERSION` | Future WhatsApp sending | Meta Graph API version. |
 | `WHATSAPP_WELCOME_TEMPLATE_NAME` | Future WhatsApp sending | Approved template name. |
 | `WHATSAPP_ENABLED` | WhatsApp send feature flag | Must remain `false` until consent and production setup are complete. |
+| `INTERNAL_ALERTS_ENABLED` | Internal alerts | Optional. Defaults to `false`; set to `true` only after ntfy config is ready. |
+| `INTERNAL_ALERTS_PROVIDER` | Internal alerts | Optional. Currently only `ntfy` is supported. |
+| `NTFY_SERVER_URL` | Internal alerts | Server-side ntfy-compatible base URL. |
+| `NTFY_TOPIC` | Internal alerts | Server-side topic name; public topics should be unguessable or protected. |
+| `NTFY_ACCESS_TOKEN` | Internal alerts | Optional server-side bearer token. |
+| `NEXT_PUBLIC_HQ_URL` | Internal alerts | Optional public-safe `/hq` link value. Do not put secrets here. |
 
 ## Supabase Schema Order
 
@@ -66,7 +72,8 @@ Rebuild in this order:
 9. Campaign tracking: UTM sanitizer, clean `/go/[source]` links, landing page/referrer preservation.
 10. Analytics: Vercel Web Analytics and Speed Insights.
 11. WhatsApp consent foundation: server-only client, disabled send flag, webhook verification, inbound reply tracking.
-12. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
+12. Internal alerts foundation: optional ntfy-compatible alert after successful assessment save, disabled by default.
+13. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
 
 ## Core Business Rules
 
@@ -85,6 +92,8 @@ Rebuild in this order:
 - Assessment rows store nullable `appliance_quantities` JSON/object data keyed by selected appliance label. Existing or imported assessment rows may have `null` in this field.
 - HQ should display appliance quantities from `appliance_quantities` when available, while retaining the names-only display for old rows without quantity data.
 - Module 19 adds light CRM/follow-up fields and protected HQ update actions for lead status, priority, internal notes, follow-up date/time, and mark-contacted state.
+- Module 20 can send a privacy-safe internal alert after a new assessment saves successfully.
+- Internal alerts are optional, disabled by default, and must not include full customer name, WhatsApp number, internal notes, exact budget, or private follow-up details.
 - Timeline maps to journey stage:
   - `As soon as possible` -> `Ready`
   - `Within 3 months` -> `Planning`
@@ -132,13 +141,15 @@ Every recommendation is a starting estimate, not a final system design. Final si
 3. Run schema SQL in the order listed above.
 4. Set server environment variables in Vercel.
 5. Keep `WHATSAPP_ENABLED=false` for production until consent and Meta setup are complete.
-6. Deploy to Vercel.
-7. Enable Vercel Web Analytics and Speed Insights in the Vercel dashboard.
-8. Test clean campaign links such as `/go/tiktok`.
-9. Complete a test estimate and verify `customers` and `assessments` rows.
-10. Verify UTM values on the assessment row.
-11. Verify the WhatsApp webhook GET challenge only after setting `WHATSAPP_VERIFY_TOKEN`.
-12. Do not test real WhatsApp sends in production until the dedicated number, template, and consent process are ready.
+6. Keep `INTERNAL_ALERTS_ENABLED=false` unless ntfy alerts are ready.
+7. If internal alerts are enabled, set `INTERNAL_ALERTS_PROVIDER`, `NTFY_SERVER_URL`, `NTFY_TOPIC`, optional `NTFY_ACCESS_TOKEN`, and optional `NEXT_PUBLIC_HQ_URL`.
+8. Deploy to Vercel.
+9. Enable Vercel Web Analytics and Speed Insights in the Vercel dashboard.
+10. Test clean campaign links such as `/go/tiktok`.
+11. Complete a test estimate and verify `customers` and `assessments` rows.
+12. Verify UTM values on the assessment row.
+13. Verify the WhatsApp webhook GET challenge only after setting `WHATSAPP_VERIFY_TOKEN`.
+14. Do not test real WhatsApp sends in production until the dedicated number, template, and consent process are ready.
 
 ## Testing Checklist
 
@@ -165,6 +176,8 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - `appliance_quantities` saves beside `appliances` after the Module 16 SQL migration has been applied.
 - `/go/[source]` redirects to homepage with expected UTM values.
 - WhatsApp send remains skipped while `WHATSAPP_ENABLED=false`.
+- Internal alerts remain skipped while `INTERNAL_ALERTS_ENABLED=false`.
+- Internal alert payloads do not include full customer names, full WhatsApp numbers, internal notes, exact budgets, or private follow-up details.
 - WhatsApp webhook verification rejects wrong tokens.
 - WhatsApp webhook POST records matching customer replies.
 - Supabase lead tables and any future views are not publicly readable.

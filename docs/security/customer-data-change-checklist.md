@@ -70,3 +70,12 @@ or lead data.
 - [x] No new customer data fields added.
 - [x] No public lead API added.
 - [x] No client-side customer/lead database read/write added.
+
+### Module 20: Internal Alerts Foundation
+
+- [x] Reads new assessment context to send a privacy-safe internal alert.
+- [x] No new customer data field added.
+- [x] No public lead API added.
+- [x] No client-side customer/lead database read/write added.
+- [x] No full PII sent in alert payload.
+- [x] Privacy/security docs updated.

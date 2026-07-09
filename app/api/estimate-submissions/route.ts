@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { sendInternalAlert } from "@/lib/alerts/client";
+import { buildNewLeadAlert } from "@/lib/alerts/leadAlert";
 import { parseTrackingPayload, type TrackingContext } from "@/lib/analytics/utm";
 import { mapTimelineToJourneyStage } from "@/lib/recommendation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
@@ -407,6 +409,15 @@ export async function POST(request: Request) {
     const supabase = createSupabaseServiceClient();
     const customer = await resolveCustomer(supabase, payload);
     await createAssessment(supabase, customer.id, payload);
+    await sendInternalAlert(
+      buildNewLeadAlert({
+        applianceQuantities: payload.appliance_quantities,
+        appliances: payload.appliances,
+        journeyStage: payload.journey_stage,
+        recommendationTitle: payload.recommendation_title,
+        source: payload.source,
+      }),
+    ).catch(() => undefined);
     await sendWhatsAppWelcomeAfterEstimate(supabase, customer, payload).catch(
       () => undefined,
     );

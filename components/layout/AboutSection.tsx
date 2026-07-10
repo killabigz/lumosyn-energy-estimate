@@ -1,8 +1,8 @@
 const paragraphs = [
-  "Lumosyn helps Jamaicans take the first step toward practical, affordable energy solutions.",
-  "We exist because energy decisions can feel complicated, expensive, and unclear when people are just starting out.",
-  "Our mission is to make guidance simple, respectful, and useful before anyone is asked to make a commitment.",
-  "Trust comes first. Transactions should only happen after customers understand their options with confidence.",
+  "Every blackout reminds us how important reliable energy is.",
+  "Too many people feel overwhelmed by technical terms, conflicting advice, and expensive systems.",
+  "We believe understanding your energy options should be simple.",
+  "We're documenting the journey, building practical tools, and sharing what we learn to help more Jamaicans make confident energy decisions.",
 ];
 
 export function AboutSection() {
@@ -18,7 +18,7 @@ export function AboutSection() {
             className="text-3xl font-semibold leading-tight tracking-normal text-foreground sm:text-4xl"
             id="about-heading"
           >
-            About Lumosyn
+            Why Lumosyn Exists
           </h2>
         </div>
         <div className="motion-fade-up motion-delay-1 grid gap-5 text-base leading-7 text-muted sm:text-lg">

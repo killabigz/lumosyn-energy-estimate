@@ -2,19 +2,19 @@ import { ChartNoAxesCombined, Compass, Sprout } from "lucide-react";
 
 const reasons = [
   {
-    description: "Clear guidance for beginners.",
+    description: "Simple guidance for understanding energy options.",
     delayClass: "motion-delay-1",
     icon: Compass,
     title: "Understand",
   },
   {
-    description: "Personalized recommendations.",
+    description: "Practical tools that help people know where to start.",
     delayClass: "motion-delay-2",
     icon: ChartNoAxesCombined,
     title: "Plan",
   },
   {
-    description: "Helping customers make confident energy decisions.",
+    description: "Confidence for more Jamaicans making energy decisions.",
     delayClass: "motion-delay-3",
     icon: Sprout,
     title: "Grow",

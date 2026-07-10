@@ -3,14 +3,17 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
 const storyParagraphs = [
-  "Every blackout reminds us how much we depend on electricity.",
-  "Most people don't know where to start with solar.",
-  "Many feel overwhelmed by technical information, conflicting advice, and expensive systems.",
-  "We believe understanding your energy options shouldn't be complicated.",
-  "That's why Lumosyn exists.",
-  "We're building simple tools, sharing what we learn openly, and working toward affordable energy solutions for Jamaica.",
-  "We're not just building products.",
-  "We're building confidence.",
+  "Every blackout reminds us how important reliable energy is.",
+  "But the biggest problem isn’t choosing a battery.",
+  "It’s knowing where to start.",
+  "Too many people feel overwhelmed by technical terms, conflicting advice, and expensive systems.",
+  "We believe understanding your energy options should be simple.",
+  "That’s why Lumosyn exists.",
+  "We’re documenting the journey, building practical tools, and sharing what we learn to help more Jamaicans make confident energy decisions.",
+  "We’re not just building batteries.",
+  "We’re building understanding.",
+  "We’re not just building products.",
+  "We’re building confidence.",
   "This is only the beginning. 💚",
 ];
 

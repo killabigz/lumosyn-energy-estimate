@@ -6,19 +6,19 @@ import { ButtonLink } from "@/components/ui/PrimaryButton";
 const sections = [
   {
     title: "What Lumosyn does",
-    body: "Lumosyn helps Jamaicans understand practical energy options before choosing a solar or backup solution.",
+    body: "Lumosyn documents the energy journey, builds practical tools, and shares what we learn along the way.",
   },
   {
     title: "Our mission",
-    body: "Our mission is to make energy planning simple, respectful, and easier to start.",
+    body: "We believe understanding your energy options should be simple, especially when the first step feels overwhelming.",
   },
   {
     title: "What we're building",
-    body: "We're building beginner-friendly tools, recommendations, and learning resources for affordable energy decisions.",
+    body: "We're building understanding, practical products, and confidence for more Jamaicans making energy decisions.",
   },
   {
     title: "What people can expect",
-    body: "People can expect clear guidance, honest next steps, and no pressure to move faster than they are ready for.",
+    body: "People can expect clear guidance, honest next steps, and help knowing where to start.",
   },
 ];
 
@@ -36,8 +36,9 @@ export default function AboutPage() {
               Simple energy guidance for Jamaica.
             </h1>
             <p className="mt-5 text-base leading-7 text-muted sm:text-lg">
-              Lumosyn helps people take a clear first step toward understanding
-              solar, backup power, and practical energy planning.
+              Lumosyn helps more Jamaicans understand their energy options and
+              make confident decisions about solar, backup power, and practical
+              energy planning.
             </p>
           </div>
 

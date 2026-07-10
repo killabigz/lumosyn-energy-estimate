@@ -24,10 +24,13 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] `lead_assessments` is internal only.
 - [ ] Any `lead_assessments` view remains secured and not public.
 - [ ] The `lead_assessments` view is used only for internal/server-side HQ access.
+- [ ] `phone_normalized` is treated as customer contact data and remains internal.
+- [ ] No public customer identity or phone lookup is added.
 - [ ] No client-side lead/customer reads are added.
 - [ ] No public lead APIs are added.
 - [ ] Internal notes and follow-up fields are not exposed publicly.
 - [ ] HQ write actions remain protected.
+- [ ] Archive/restore actions remain protected and are not permanent delete.
 - [ ] Reporting/export workflows avoid exposing phone numbers or free-text fields unless needed.
 - [ ] A backup/export process is defined before scale.
 - [ ] A deletion/anonymization process is defined before scale.

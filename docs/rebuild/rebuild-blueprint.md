@@ -48,6 +48,7 @@ For a clean rebuild, run SQL in this order:
 4. `docs/supabase/module15-lead-assessments-view.sql`
 5. `docs/supabase/module16-appliance-quantities.sql`
 6. `docs/supabase/module19-lead-followup-fields.sql`
+7. `docs/supabase/module21-customer-identity-lead-cleanup.sql`
 
 Notes:
 
@@ -55,7 +56,9 @@ Notes:
 - RLS is enabled on `customers` and `assessments`.
 - Do not add public read policies for lead data.
 - Use `docs/supabase/schema.sql` only if you intentionally need the legacy `estimate_submissions` table for migration or backwards compatibility.
-- If a reporting view such as `lead_assessments` is added later, it must remain secured and not publicly readable.
+- `module21-customer-identity-lead-cleanup.sql` backfills `customers.phone_normalized` from `customers.whatsapp`.
+- `lead_assessments` must remain secured and not publicly readable.
+- Existing duplicate customers require manual review before any merge.
 
 ## Module Sequence
 
@@ -73,7 +76,8 @@ Rebuild in this order:
 10. Analytics: Vercel Web Analytics and Speed Insights.
 11. WhatsApp consent foundation: server-only client, disabled send flag, webhook verification, inbound reply tracking.
 12. Internal alerts foundation: optional ntfy-compatible alert after successful assessment save, disabled by default.
-13. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
+13. Customer identity and lead cleanup: phone-first matching, assessment history counts, protected archive/restore actions.
+14. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
 
 ## Core Business Rules
 
@@ -84,14 +88,18 @@ Rebuild in this order:
 - A leading `1` country code is accepted and stripped for stored customer matching.
 - `Other` appliance requires custom appliance text.
 - Selected appliances may include quantity controls. Quantities default to `1`, are limited to a practical range, and are saved separately from the existing `appliances` array.
-- A customer is deduplicated by `customers.whatsapp`.
-- Existing customers are updated with latest name, email, and journey stage.
+- A customer is deduplicated by `customers.phone_normalized`, with legacy `customers.whatsapp` fallback during transition.
+- Phone number is stronger than name.
+- Existing customer names are updated only when the stored name is empty or placeholder-like.
+- Existing customers are updated with latest journey stage and supplied email.
 - Each completed estimate creates a new assessment row.
 - Previous latest assessments for the same customer are marked `is_latest=false`.
 - New assessment rows are inserted with `is_latest=true`.
 - Assessment rows store nullable `appliance_quantities` JSON/object data keyed by selected appliance label. Existing or imported assessment rows may have `null` in this field.
 - HQ should display appliance quantities from `appliance_quantities` when available, while retaining the names-only display for old rows without quantity data.
 - Module 19 adds light CRM/follow-up fields and protected HQ update actions for lead status, priority, internal notes, follow-up date/time, and mark-contacted state.
+- Module 21 adds `phone_normalized`, non-destructive assessment archive fields, customer assessment counts in HQ, and protected archive/restore actions.
+- Archived assessments are hidden from the default HQ latest leads list but are not deleted.
 - Module 20 can send a privacy-safe internal alert after a new assessment saves successfully.
 - Internal alerts are optional, disabled by default, and must not include full customer name, WhatsApp number, internal notes, exact budget, or private follow-up details.
 - Timeline maps to journey stage:
@@ -139,17 +147,18 @@ Every recommendation is a starting estimate, not a final system design. Final si
 1. Install dependencies with `npm install`.
 2. Create Supabase project.
 3. Run schema SQL in the order listed above.
-4. Set server environment variables in Vercel.
-5. Keep `WHATSAPP_ENABLED=false` for production until consent and Meta setup are complete.
-6. Keep `INTERNAL_ALERTS_ENABLED=false` unless ntfy alerts are ready.
-7. If internal alerts are enabled, set `INTERNAL_ALERTS_PROVIDER`, `NTFY_SERVER_URL`, `NTFY_TOPIC`, optional `NTFY_ACCESS_TOKEN`, and optional `NEXT_PUBLIC_HQ_URL`.
-8. Deploy to Vercel.
-9. Enable Vercel Web Analytics and Speed Insights in the Vercel dashboard.
-10. Test clean campaign links such as `/go/tiktok`.
-11. Complete a test estimate and verify `customers` and `assessments` rows.
-12. Verify UTM values on the assessment row.
-13. Verify the WhatsApp webhook GET challenge only after setting `WHATSAPP_VERIFY_TOKEN`.
-14. Do not test real WhatsApp sends in production until the dedicated number, template, and consent process are ready.
+4. After Module 21 SQL, review duplicate `phone_normalized` diagnostics before any manual merge.
+5. Set server environment variables in Vercel.
+6. Keep `WHATSAPP_ENABLED=false` for production until consent and Meta setup are complete.
+7. Keep `INTERNAL_ALERTS_ENABLED=false` unless ntfy alerts are ready.
+8. If internal alerts are enabled, set `INTERNAL_ALERTS_PROVIDER`, `NTFY_SERVER_URL`, `NTFY_TOPIC`, optional `NTFY_ACCESS_TOKEN`, and optional `NEXT_PUBLIC_HQ_URL`.
+9. Deploy to Vercel.
+10. Enable Vercel Web Analytics and Speed Insights in the Vercel dashboard.
+11. Test clean campaign links such as `/go/tiktok`.
+12. Complete a test estimate and verify `customers` and `assessments` rows.
+13. Verify UTM values on the assessment row.
+14. Verify the WhatsApp webhook GET challenge only after setting `WHATSAPP_VERIFY_TOKEN`.
+15. Do not test real WhatsApp sends in production until the dedicated number, template, and consent process are ready.
 
 ## Testing Checklist
 
@@ -169,7 +178,7 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - Air Conditioner x2, Water Pump x2, and Freezer x2 returns the strongest 48V planning range.
 - Failed save state does not hide the recommendation.
 - API creates a new customer for a new WhatsApp number.
-- API updates an existing customer for a repeated WhatsApp number.
+- API reuses an existing customer for a repeated normalized phone number, even if the submitted name changes.
 - API creates a new assessment each time.
 - Previous latest assessments become `is_latest=false`.
 - UTM/source/landing/referrer values save to `assessments`.
@@ -178,6 +187,10 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - WhatsApp send remains skipped while `WHATSAPP_ENABLED=false`.
 - Internal alerts remain skipped while `INTERNAL_ALERTS_ENABLED=false`.
 - Internal alert payloads do not include full customer names, full WhatsApp numbers, internal notes, exact budgets, or private follow-up details.
+- HQ shows assessment count only for customers with multiple assessments.
+- HQ hides archived assessments from the default latest leads list.
+- HQ Archive action hides the selected assessment after refresh.
+- Existing HQ CRM save and mark-contacted actions still work.
 - WhatsApp webhook verification rejects wrong tokens.
 - WhatsApp webhook POST records matching customer replies.
 - Supabase lead tables and any future views are not publicly readable.

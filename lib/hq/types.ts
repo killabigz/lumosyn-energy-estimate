@@ -3,8 +3,11 @@ import type { LeadPriority, LeadStatus } from "@/lib/hq/leadFollowUp";
 export type ApplianceQuantities = Record<string, number>;
 
 export type LeadAssessmentRow = {
+  archived_at: string | null;
+  archived_reason: string | null;
   appliances: string[] | null;
   appliance_quantities: ApplianceQuantities | null;
+  assessment_count_for_customer: number;
   assessment_created_at: string;
   assessment_id: string;
   battery_label: string | null;
@@ -17,12 +20,14 @@ export type LeadAssessmentRow = {
   goal: string;
   internal_note: string | null;
   inverter_label: string | null;
+  is_archived: boolean;
   is_latest: boolean;
   journey_stage: string;
   last_contacted_at: string | null;
   lead_priority: LeadPriority | null;
   lead_status: LeadStatus | null;
   lead_updated_at: string | null;
+  phone_normalized: string | null;
   recommendation_title: string;
   runtime: string;
   solar_panel_label: string | null;

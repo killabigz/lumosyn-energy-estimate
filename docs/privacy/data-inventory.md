@@ -19,6 +19,8 @@ Primary derived or system-generated data:
 - Journey stage
 - Customer/assessment IDs and timestamps
 - Latest-assessment flag
+- Normalized customer phone identity
+- Internal archive state for hidden assessments
 - Campaign attribution and referrer
 - WhatsApp welcome/reply status fields
 
@@ -44,6 +46,7 @@ The current `/api/estimate-submissions` route does not write the legacy `estimat
 | `updated_at` | `customers.updated_at` | `2026-07-01T15:20:00Z` | Records when customer data was last updated by estimate submission. | System-generated | Yes | Keep with customer row; remove on deletion. | Operational timestamp. |
 | `name` | `customers.name` | `Alicia` | Personalizes the recommendation and helps follow up. | User-provided | Yes | Keep only while follow-up or customer support is needed; review stale leads after 12-24 months. | Contact Info. Disclose name collection. |
 | `whatsapp` | `customers.whatsapp` | `8765550123` | Main contact identifier and deduplication key. | User-provided, normalized by server | Yes | Treat as personal contact info; delete on request and review stale leads after 12-24 months. | Contact Info. Disclose phone number collection. |
+| `phone_normalized` | `customers.phone_normalized` | `8765550123` | Derived digits-only phone value used for internal customer identity matching. | Derived from WhatsApp/phone | Yes | Treat as personal contact info; delete/anonymize with the customer row. | Contact Info. Must remain internal and not be exposed through public lookup. |
 | `email` | `customers.email` | `name@example.com` | Optional alternate contact channel. | User-provided | Yes | Keep only while needed for support/follow-up; delete on request. | Contact Info if enabled in mobile disclosures. |
 | `journey_stage` | `customers.journey_stage` | `Planning` | Current lead stage derived from install timeline. | Derived | Yes | Keep while lead/customer relationship is active; review with lead data. | User Content/Other Data or product personalization context. |
 | `community_status` | `customers.community_status` | `pending`, `joined`, `opted_out` | Tracks WhatsApp/community consent status from defaults and webhook replies. | System-generated and derived from replies | Yes | Keep as consent/status history while contact data exists; preserve opt-out as long as needed to avoid unwanted contact. | Contact/communication preference. Important for consent documentation. |
@@ -81,6 +84,9 @@ The current `/api/estimate-submissions` route does not write the legacy `estimat
 | `solar_panel_label` | `assessments.solar_panel_label` | `4-6 panels` | Starter solar panel planning label. | Derived | Yes | Keep with assessment row. | App functionality result. |
 | `source` | `assessments.source` | `tiktok` or `direct` | Attribution fallback/source for the estimate. | System-generated from query params | Yes | Keep while campaign attribution is needed; aggregate/anonymize where possible. | Usage Data/Analytics or Developer Marketing if used for marketing decisions. |
 | `is_latest` | `assessments.is_latest` | `true` | Marks the newest assessment for a customer. | System-generated | Yes | Keep with assessment row; old rows may be retained for history or pruned by retention policy. | Operational status flag. |
+| `is_archived` | `assessments.is_archived` | `false` | Internal HQ flag that hides an assessment from normal latest lead lists without deleting it. | HQ admin/system operational field | Yes | Same as assessment data until retention/deletion policy exists. | Internal customer relationship/support data. Archive is not delete. |
+| `archived_at` | `assessments.archived_at` | `2026-07-10T13:00:00Z` | Records when an assessment was archived. | HQ admin/system operational timestamp | Yes | Same as assessment data until retention/deletion policy exists. | Internal operational timestamp. |
+| `archived_reason` | `assessments.archived_reason` | `Duplicate form cleanup` | Optional internal reason for archiving an assessment. | HQ admin entered/generated | Yes | Same as internal notes; minimize and avoid unnecessary personal detail. | Internal customer relationship/support data. |
 | `utm_source` | `assessments.utm_source` | `tiktok` | Campaign source attribution. | System-generated from query params | Yes | Keep while needed for attribution; consider aggregation after campaign review period. | Usage Data/Analytics; Developer Marketing if used for marketing decisions. |
 | `utm_medium` | `assessments.utm_medium` | `bio` | Campaign medium attribution. | System-generated from query params | Yes | Keep while needed for attribution; aggregate/anonymize later. | Usage Data/Analytics; Developer Marketing if used for marketing decisions. |
 | `utm_campaign` | `assessments.utm_campaign` | `launch_v1` | Campaign name attribution. | System-generated from query params | Yes | Keep while needed for campaign analysis; aggregate/anonymize later. | Usage Data/Analytics; Developer Marketing if used for marketing decisions. |

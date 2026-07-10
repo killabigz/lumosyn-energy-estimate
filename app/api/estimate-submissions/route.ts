@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendInternalAlert } from "@/lib/alerts/client";
 import { buildNewLeadAlert } from "@/lib/alerts/leadAlert";
 import { parseTrackingPayload, type TrackingContext } from "@/lib/analytics/utm";
+import { normalizePhoneDigits } from "@/lib/customerIdentity/phone";
 import { mapTimelineToJourneyStage } from "@/lib/recommendation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
@@ -14,12 +15,23 @@ const JAMAICAN_WHATSAPP_PATTERN = /^876\d{7}$/;
 const WHATSAPP_OPT_IN_SOURCE = "estimate_submission";
 const APPLIANCE_QUANTITY_MINIMUM = 1;
 const APPLIANCE_QUANTITY_MAXIMUM = 10;
+const CUSTOMER_SELECT =
+  "id, created_at, community_status, email, name, phone_normalized, whatsapp_welcome_sent_at";
+const PLACEHOLDER_CUSTOMER_NAMES = new Set([
+  "customer",
+  "lead",
+  "n/a",
+  "na",
+  "none",
+  "unknown",
+]);
 
 type ApplianceQuantities = Record<string, number>;
 
 type EstimateSubmissionPayload = {
   name: string;
   whatsapp: string;
+  phone_normalized: string;
   email: string | null;
   goal: string;
   budget: string;
@@ -39,7 +51,11 @@ type EstimateSubmissionPayload = {
 
 type CustomerRecord = {
   community_status: string;
+  created_at: string;
+  email: string | null;
   id: string;
+  name: string;
+  phone_normalized: string | null;
   whatsapp_welcome_sent_at: string | null;
 };
 
@@ -140,6 +156,12 @@ function normalizeJamaicanWhatsApp(value: string) {
     : undefined;
 }
 
+function isPlaceholderCustomerName(value: string | null | undefined) {
+  const normalizedName = value?.trim().toLowerCase() ?? "";
+
+  return !normalizedName || PLACEHOLDER_CUSTOMER_NAMES.has(normalizedName);
+}
+
 function includesOtherAppliance(appliances: string[]) {
   return appliances.some(
     (appliance) => appliance.trim().toLowerCase() === "other",
@@ -157,6 +179,7 @@ function parseSubmissionPayload(
   const whatsapp = normalizeJamaicanWhatsApp(
     getRequiredText(body, "whatsapp") ?? "",
   );
+  const phoneNormalized = whatsapp ? normalizePhoneDigits(whatsapp) : null;
   const goal = getRequiredText(body, "goal");
   const budget = getRequiredText(body, "budget");
   const appliances = getRequiredAppliances(body);
@@ -177,6 +200,7 @@ function parseSubmissionPayload(
   if (
     !name ||
     !whatsapp ||
+    !phoneNormalized ||
     !goal ||
     !budget ||
     !appliances ||
@@ -197,6 +221,7 @@ function parseSubmissionPayload(
   return {
     name,
     whatsapp,
+    phone_normalized: phoneNormalized,
     email: getOptionalText(body, "email"),
     goal,
     budget,
@@ -218,35 +243,70 @@ function parseSubmissionPayload(
 
 async function getExistingCustomer(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
+  phoneNormalized: string,
   whatsapp: string,
 ) {
-  const { data, error } = await supabase
+  const byPhone = await supabase
     .from("customers")
-    .select("id, community_status, whatsapp_welcome_sent_at")
+    .select(CUSTOMER_SELECT)
+    .eq("phone_normalized", phoneNormalized)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .returns<CustomerRecord[]>();
+
+  if (byPhone.error) {
+    throw byPhone.error;
+  }
+
+  if (byPhone.data?.[0]) {
+    return byPhone.data[0];
+  }
+
+  const byWhatsApp = await supabase
+    .from("customers")
+    .select(CUSTOMER_SELECT)
     .eq("whatsapp", whatsapp)
     .maybeSingle<CustomerRecord>();
 
-  if (error) {
-    throw error;
+  if (byWhatsApp.error) {
+    throw byWhatsApp.error;
   }
 
-  return data;
+  return byWhatsApp.data;
 }
 
 async function updateCustomer(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
-  customerId: string,
+  customer: CustomerRecord,
   payload: EstimateSubmissionPayload,
 ) {
+  const updatePayload: {
+    email?: string | null;
+    journey_stage: string;
+    name?: string;
+    phone_normalized?: string;
+    updated_at: string;
+  } = {
+    journey_stage: payload.journey_stage,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (payload.email) {
+    updatePayload.email = payload.email;
+  }
+
+  if (isPlaceholderCustomerName(customer.name)) {
+    updatePayload.name = payload.name;
+  }
+
+  if (customer.phone_normalized !== payload.phone_normalized) {
+    updatePayload.phone_normalized = payload.phone_normalized;
+  }
+
   const { error } = await supabase
     .from("customers")
-    .update({
-      email: payload.email,
-      journey_stage: payload.journey_stage,
-      name: payload.name,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", customerId);
+    .update(updatePayload)
+    .eq("id", customer.id);
 
   if (error) {
     throw error;
@@ -263,9 +323,10 @@ async function createCustomer(
       email: payload.email,
       journey_stage: payload.journey_stage,
       name: payload.name,
+      phone_normalized: payload.phone_normalized,
       whatsapp: payload.whatsapp,
     })
-    .select("id, community_status, whatsapp_welcome_sent_at")
+    .select(CUSTOMER_SELECT)
     .single<CustomerRecord>();
 
   if (error || !data?.id) {
@@ -279,10 +340,14 @@ async function resolveCustomer(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
   payload: EstimateSubmissionPayload,
 ) {
-  const existingCustomer = await getExistingCustomer(supabase, payload.whatsapp);
+  const existingCustomer = await getExistingCustomer(
+    supabase,
+    payload.phone_normalized,
+    payload.whatsapp,
+  );
 
   if (existingCustomer) {
-    await updateCustomer(supabase, existingCustomer.id, payload);
+    await updateCustomer(supabase, existingCustomer, payload);
 
     return existingCustomer;
   }
@@ -290,13 +355,17 @@ async function resolveCustomer(
   try {
     return await createCustomer(supabase, payload);
   } catch {
-    const customer = await getExistingCustomer(supabase, payload.whatsapp);
+    const customer = await getExistingCustomer(
+      supabase,
+      payload.phone_normalized,
+      payload.whatsapp,
+    );
 
     if (!customer) {
       throw new Error("Customer was not available.");
     }
 
-    await updateCustomer(supabase, customer.id, payload);
+    await updateCustomer(supabase, customer, payload);
 
     return customer;
   }

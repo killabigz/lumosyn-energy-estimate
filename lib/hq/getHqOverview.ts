@@ -62,6 +62,8 @@ export const getHqOverview = cache(async (): Promise<HqOverview> => {
           "customer_id",
           "customer_name",
           "customer_whatsapp",
+          "phone_normalized",
+          "assessment_count_for_customer",
           "community_status",
           "goal",
           "appliances",
@@ -85,14 +87,19 @@ export const getHqOverview = cache(async (): Promise<HqOverview> => {
           "last_contacted_at",
           "follow_up_at",
           "lead_updated_at",
+          "is_archived",
+          "archived_at",
+          "archived_reason",
         ].join(","),
       )
+      .eq("is_archived", false)
       .order("assessment_created_at", { ascending: false })
       .limit(LATEST_LEADS_LIMIT)
       .returns<LeadAssessmentRow[]>(),
     supabase
       .from("lead_assessments")
       .select("source, utm_source")
+      .eq("is_archived", false)
       .order("assessment_created_at", { ascending: false })
       .limit(SOURCE_SAMPLE_LIMIT)
       .returns<Pick<LeadAssessmentRow, "source" | "utm_source">[]>(),

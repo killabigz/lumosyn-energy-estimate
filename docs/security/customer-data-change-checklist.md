@@ -79,3 +79,15 @@ or lead data.
 - [x] No client-side customer/lead database read/write added.
 - [x] No full PII sent in alert payload.
 - [x] Privacy/security docs updated.
+
+### Module 21: Customer Identity And Lead Cleanup
+
+- [x] Touches customer identity by adding `customers.phone_normalized`.
+- [x] Touches assessment data by adding `is_archived`, `archived_at`, and `archived_reason`.
+- [x] Future submissions match customers by normalized phone before creating a customer.
+- [x] Repeat submissions create new assessments under the resolved customer.
+- [x] Existing duplicate customers are not auto-merged.
+- [x] No permanent delete added.
+- [x] No public lead API added.
+- [x] No client-side customer/lead database read/write added.
+- [x] `lead_assessments` remains revoked from `anon` and `authenticated`.

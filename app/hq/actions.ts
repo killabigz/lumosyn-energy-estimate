@@ -16,6 +16,7 @@ const ASSESSMENT_ID_PATTERN =
 const FOLLOW_UP_AT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const HQ_TIME_ZONE_OFFSET = "-05:00";
 const INTERNAL_NOTE_MAX_LENGTH = 1000;
+const ARCHIVE_REASON_MAX_LENGTH = 500;
 
 type LeadFollowUpUpdate = {
   assessment_id: string;
@@ -77,6 +78,22 @@ function parseLeadFollowUpUpdate(
   };
 }
 
+function parseAssessmentId(formData: FormData) {
+  const assessmentId = getFormText(formData, "assessment_id");
+
+  return ASSESSMENT_ID_PATTERN.test(assessmentId) ? assessmentId : undefined;
+}
+
+function parseArchiveReason(formData: FormData) {
+  const archivedReason = getFormText(formData, "archived_reason");
+
+  if (archivedReason.length > ARCHIVE_REASON_MAX_LENGTH) {
+    return undefined;
+  }
+
+  return archivedReason || null;
+}
+
 async function assertHqActionAuthorized() {
   const headerStore = await headers();
 
@@ -121,6 +138,57 @@ export async function updateLeadFollowUp(formData: FormData) {
 
   if (error) {
     throw new Error("Unable to update HQ lead follow-up fields.");
+  }
+
+  revalidatePath("/hq");
+}
+
+export async function archiveLeadAssessment(formData: FormData) {
+  await assertHqActionAuthorized();
+
+  const assessmentId = parseAssessmentId(formData);
+  const archivedReason = parseArchiveReason(formData);
+
+  if (!assessmentId || archivedReason === undefined) {
+    return;
+  }
+
+  const { error } = await createSupabaseServiceClient()
+    .from("assessments")
+    .update({
+      archived_at: new Date().toISOString(),
+      archived_reason: archivedReason,
+      is_archived: true,
+    })
+    .eq("id", assessmentId);
+
+  if (error) {
+    throw new Error("Unable to archive HQ lead assessment.");
+  }
+
+  revalidatePath("/hq");
+}
+
+export async function restoreLeadAssessment(formData: FormData) {
+  await assertHqActionAuthorized();
+
+  const assessmentId = parseAssessmentId(formData);
+
+  if (!assessmentId) {
+    return;
+  }
+
+  const { error } = await createSupabaseServiceClient()
+    .from("assessments")
+    .update({
+      archived_at: null,
+      archived_reason: null,
+      is_archived: false,
+    })
+    .eq("id", assessmentId);
+
+  if (error) {
+    throw new Error("Unable to restore HQ lead assessment.");
   }
 
   revalidatePath("/hq");

@@ -1,6 +1,14 @@
 "use client";
 
-import { CalendarClock, Circle, PhoneCall, Save, X } from "lucide-react";
+import {
+  Archive,
+  CalendarClock,
+  Circle,
+  PhoneCall,
+  RotateCcw,
+  Save,
+  X,
+} from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -9,7 +17,11 @@ import {
   useState,
 } from "react";
 import { useFormStatus } from "react-dom";
-import { updateLeadFollowUp } from "@/app/hq/actions";
+import {
+  archiveLeadAssessment,
+  restoreLeadAssessment,
+  updateLeadFollowUp,
+} from "@/app/hq/actions";
 import {
   getLeadPriorityLabel,
   getLeadStatusLabel,
@@ -30,6 +42,7 @@ type LeadFollowUpFields = {
   assessment_id: string;
   follow_up_at: string | null;
   internal_note: string | null;
+  is_archived: boolean;
   last_contacted_at: string | null;
   lead_priority: LeadPriority | null;
   lead_status: LeadStatus | null;
@@ -176,6 +189,46 @@ function SubmitButton({
   );
 }
 
+function ArchiveSubmitButton({ isArchived }: { isArchived: boolean }) {
+  const { pending } = useFormStatus();
+  const Icon = isArchived ? RotateCcw : Archive;
+  const label = isArchived ? "Restore" : "Archive";
+
+  return (
+    <button
+      className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs font-semibold text-secondary transition hover:border-accent/45 hover:text-foreground disabled:cursor-wait disabled:opacity-70"
+      disabled={pending}
+      type="submit"
+    >
+      <Icon aria-hidden="true" className="size-3.5" />
+      {pending ? "Saving" : label}
+    </button>
+  );
+}
+
+function LeadArchiveForm({ lead }: { lead: LeadFollowUpFields }) {
+  const action = lead.is_archived
+    ? restoreLeadAssessment
+    : archiveLeadAssessment;
+  const confirmationMessage = lead.is_archived
+    ? "Restore this assessment to the normal HQ lead list?"
+    : "Archive this assessment and hide it from the normal HQ lead list?";
+
+  return (
+    <form
+      action={action}
+      onSubmit={(event) => {
+        if (!window.confirm(confirmationMessage)) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input name="assessment_id" type="hidden" value={lead.assessment_id} />
+      <ArchiveSubmitButton isArchived={lead.is_archived} />
+    </form>
+  );
+}
+
 function FollowUpSummary({
   isOpen,
   lead,
@@ -196,15 +249,18 @@ function FollowUpSummary({
         <p className="text-xs font-semibold uppercase leading-4 text-secondary">
           Follow-up
         </p>
-        <button
-          aria-controls={panelId}
-          aria-expanded={isOpen}
-          className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full border border-accent/35 bg-accent-soft px-3 text-xs font-semibold text-accent transition hover:border-accent/70"
-          onClick={onToggle}
-          type="button"
-        >
-          {isOpen ? "Close" : "Edit"}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <LeadArchiveForm lead={lead} />
+          <button
+            aria-controls={panelId}
+            aria-expanded={isOpen}
+            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-full border border-accent/35 bg-accent-soft px-3 text-xs font-semibold text-accent transition hover:border-accent/70"
+            onClick={onToggle}
+            type="button"
+          >
+            {isOpen ? "Close" : "Edit"}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -392,8 +448,10 @@ export function HqLeadFollowUpControls({
 }
 
 export function HqLeadFollowUpTableEditor({
+  columnCount = 13,
   lead,
 }: {
+  columnCount?: number;
   lead: LeadFollowUpFields;
 }) {
   const { openAssessmentId, setOpenAssessmentId } = useHqFollowUp();
@@ -405,7 +463,7 @@ export function HqLeadFollowUpTableEditor({
 
   return (
     <tr>
-      <td className="px-0 py-0" colSpan={13}>
+      <td className="px-0 py-0" colSpan={columnCount}>
         <LeadFollowUpEditor
           lead={lead}
           onClose={() => setOpenAssessmentId(null)}

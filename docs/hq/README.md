@@ -29,6 +29,9 @@ credential values to the repo.
   while old assessments with null quantity data may show appliance names only.
 - Module 19 adds protected lead status, priority, internal notes, follow-up
   date/time, and mark-contacted support.
+- Module 21 reuses customers by `phone_normalized`, shows assessment history
+  counts when a customer has multiple assessments, and adds Archive for hiding
+  an assessment from the normal latest leads list without deleting it.
 - Desktop and tablet screens use the full summary card grid and readable latest
   leads table with compact follow-up summaries by default.
 - Phone-sized screens use a compact overview card followed by mobile lead cards
@@ -47,7 +50,7 @@ chooses to edit a lead.
 
 V1 intentionally does not include:
 
-- Deleting leads or customer records.
+- Permanently deleting leads or customer records.
 - Exporting or backing up lead data.
 - Team accounts, owners, or assignment workflows.
 - Full CRM tasks or pipeline automation.
@@ -60,7 +63,9 @@ V1 intentionally does not include:
 - HQ credentials live only in environment variables.
 - Lead data is loaded server-side with the Supabase service-role client.
 - Lead follow-up writes must stay server-side and protected.
+- Lead archive and restore writes must stay server-side and protected.
 - Lead data must not be fetched from client-side Supabase.
+- `phone_normalized` is customer contact data and must remain internal.
 - `SUPABASE_SERVICE_ROLE_KEY` must never be exposed to the browser.
 - `public.lead_assessments` is for internal/server-side HQ usage only.
 - Do not grant `anon` or `authenticated` public read access to the view.

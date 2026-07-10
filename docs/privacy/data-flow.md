@@ -20,6 +20,7 @@ Campaign link
 Protected /hq
   -> HQ server action
   -> Supabase assessments internal follow-up fields
+  -> Supabase assessments archive fields
 
 Meta WhatsApp webhook
   -> /api/whatsapp/webhook
@@ -83,15 +84,17 @@ The route returns `{ ok: true }` when the save completes. If saving fails, the u
 
 ## API Route To Supabase Customers
 
-`app/api/estimate-submissions/route.ts` validates the payload and normalizes the WhatsApp number to a Jamaican local format such as `8765550123`.
+`app/api/estimate-submissions/route.ts` validates the payload, normalizes the WhatsApp number to a Jamaican local format such as `8765550123`, and derives `phone_normalized` as the digits-only customer identity value.
 
 The API then:
 
-- Looks for an existing `customers` row with the same WhatsApp number.
-- Updates `name`, `email`, `journey_stage`, and `updated_at` when the customer already exists.
+- Looks for an existing `customers` row with the same `phone_normalized` value.
+- Falls back to legacy `customers.whatsapp` matching during the transition.
+- Updates `journey_stage`, `updated_at`, and supplied email when the customer already exists.
+- Updates the stored name only when the existing name is empty or placeholder-like.
 - Creates a new customer when no matching row exists.
 
-This deduplicates customers by WhatsApp number.
+This deduplicates future customers by normalized phone number. No public customer identity lookup is added.
 
 ## API Route To Supabase Assessments
 
@@ -103,6 +106,10 @@ After resolving the customer, the API:
 - Saves appliance quantities with assessment data when provided by the estimate flow.
 
 This preserves assessment history while making it easy to find the newest assessment.
+
+The same customer can have many assessments. A repeated estimate with the same
+phone number and a different name should reuse the existing customer and create
+a new assessment under that customer.
 
 ## New Assessment To Internal Alert
 
@@ -133,6 +140,16 @@ internal assessment follow-up fields:
 These fields are for internal follow-up only. There is no public or
 customer-facing access to them, no public lead API is added, and client-side
 Supabase is not used for lead/customer reads or writes.
+
+Module 21 adds protected archive and restore actions for assessments:
+
+- Archive sets `is_archived=true`, `archived_at=now()`, and optional
+  `archived_reason`.
+- Restore clears those archive fields.
+- The default HQ latest leads query hides archived assessments.
+
+Archive is not delete. Customer and assessment data remain in Supabase until a
+separate retention, deletion, or merge workflow is implemented.
 
 ## WhatsApp Webhook To Customers Table
 

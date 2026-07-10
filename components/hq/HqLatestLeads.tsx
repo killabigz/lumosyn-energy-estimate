@@ -47,6 +47,10 @@ function formatStatus(value: string) {
     .join(" ");
 }
 
+function hasMultipleAssessments(lead: LeadAssessmentRow) {
+  return lead.assessment_count_for_customer > 1;
+}
+
 function LatestIndicator({
   isLatest,
   label = "Yes",
@@ -155,6 +159,12 @@ function LeadMobileCard({ lead }: { lead: LeadAssessmentRow }) {
       <div className="flex flex-wrap gap-2">
         <MetaPill label="Source" value={formatSource(lead)} />
         <MetaPill label="Stage" value={lead.journey_stage} />
+        {hasMultipleAssessments(lead) && (
+          <MetaPill
+            label="Assessments"
+            value={String(lead.assessment_count_for_customer)}
+          />
+        )}
         <CommunityStatus status={lead.community_status} />
       </div>
 
@@ -193,12 +203,16 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
             Latest leads
           </h2>
           <p className="text-sm leading-6 text-muted">
-            No leads yet. Share a campaign link to start collecting assessments.
+            No active leads yet. Share a campaign link to start collecting
+            assessments.
           </p>
         </div>
       </section>
     );
   }
+
+  const showAssessmentCounts = leads.some(hasMultipleAssessments);
+  const tableColumnCount = showAssessmentCounts ? 14 : 13;
 
   return (
     <HqFollowUpProvider>
@@ -215,7 +229,7 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
               Latest leads
             </h2>
             <p className="text-sm leading-6 text-muted">
-              Showing the latest 25 assessments.
+              Showing the latest 25 active assessments.
             </p>
           </div>
           <p className="text-xs font-semibold uppercase text-secondary">
@@ -237,6 +251,7 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
                   "Date",
                   "Customer name",
                   "WhatsApp",
+                  ...(showAssessmentCounts ? ["Assessments"] : []),
                   "Source",
                   "Goal",
                   "Appliances",
@@ -271,6 +286,13 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
                     <td className="border-b border-border/70 px-3 py-4">
                       {formatWhatsApp(lead.customer_whatsapp)}
                     </td>
+                    {showAssessmentCounts && (
+                      <td className="border-b border-border/70 px-3 py-4 font-semibold text-foreground">
+                        {hasMultipleAssessments(lead)
+                          ? lead.assessment_count_for_customer
+                          : null}
+                      </td>
+                    )}
                     <td className="border-b border-border/70 px-3 py-4">
                       {formatSource(lead)}
                     </td>
@@ -308,7 +330,10 @@ export function HqLatestLeads({ leads }: { leads: LeadAssessmentRow[] }) {
                       <HqLeadFollowUpControls lead={lead} variant="table" />
                     </td>
                   </tr>
-                  <HqLeadFollowUpTableEditor lead={lead} />
+                  <HqLeadFollowUpTableEditor
+                    columnCount={tableColumnCount}
+                    lead={lead}
+                  />
                 </Fragment>
               ))}
             </tbody>

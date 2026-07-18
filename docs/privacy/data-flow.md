@@ -16,6 +16,7 @@ Campaign link
   -> Supabase customers
   -> Supabase assessments
   -> Optional privacy-safe internal alert
+  -> Optional consent-based WhatsApp welcome template
 
 Protected /hq
   -> HQ server action
@@ -124,6 +125,27 @@ WhatsApp number, internal notes, exact budget, or private follow-up details.
 Full lead/customer details remain inside protected `/hq`. Alert failures are
 best effort and must not break lead capture.
 
+## New Assessment To WhatsApp Welcome
+
+After the customer and assessment rows save successfully, Module 12B can trigger
+a server-side WhatsApp welcome template through the Meta WhatsApp Cloud API.
+
+The welcome send is guarded by:
+
+- `WHATSAPP_ENABLED=true`
+- server-side WhatsApp access token and phone number ID
+- the approved `lumosyn_welcome_message` template
+- the customer WhatsApp consent/status field
+- the customer-level `whatsapp_welcome_sent_at` anti-spam timestamp
+
+The welcome message does not include recommendation details, budgets, internal
+notes, follow-up state, HQ links, or private assessment data. It contains only a
+safe greeting, a note that the estimate was received, and an invitation to reply
+for help understanding the next step.
+
+WhatsApp token values stay server-side in environment variables. Send failures
+are best effort and do not change the public estimate submission response.
+
 ## Protected HQ Follow-Up Updates
 
 `/hq` is protected before rendering and loads customer-linked lead data
@@ -201,15 +223,18 @@ At a high level:
 
 Review Vercel dashboard settings and documentation before mobile app disclosure or privacy policy publication.
 
-## WhatsApp Sending Pause
+## WhatsApp Welcome Send Gate
 
-`lib/whatsapp/client.ts` returns a skipped result unless `WHATSAPP_ENABLED=true`.
+`lib/whatsapp/client.ts` and `lib/whatsapp/sendWelcomeMessage.ts` return a
+skipped result unless the send gate is ready.
 
-Current safe behavior:
+Safe default behavior:
 
 - Estimates save.
 - Customers can enter a WhatsApp number.
-- No automatic WhatsApp welcome message is sent.
-- Consent/status fields can exist for future setup.
+- No automatic WhatsApp welcome message is sent while `WHATSAPP_ENABLED=false`.
+- Missing WhatsApp config skips sending without breaking lead capture.
+- Customers with `opted_out` or unknown WhatsApp status are not sent a welcome.
 
-`WHATSAPP_ENABLED` must remain `false` until production consent, Meta template, phone number, and operational processes are ready.
+`WHATSAPP_ENABLED` must remain `false` until production consent, Meta template,
+phone number, SQL, and operational processes are ready.

@@ -25,12 +25,13 @@ Do not commit real values.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Estimate save API | Public-safe Supabase project URL. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Estimate save API and webhook updates | Server-only. Never expose to the browser. |
-| `WHATSAPP_ACCESS_TOKEN` | Future WhatsApp sending | Server-only. Required only when sending is enabled. |
-| `WHATSAPP_PHONE_NUMBER_ID` | Future WhatsApp sending | Server-only Meta phone number ID. |
+| `WHATSAPP_ENABLED` | WhatsApp send feature flag | Must remain `false` until consent, SQL, Meta template, and production setup are complete. |
+| `WHATSAPP_API_VERSION` | WhatsApp welcome sending | Meta Graph API version. Defaults to `v21.0`. |
+| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp welcome sending | Server-only Meta phone number ID. |
+| `WHATSAPP_ACCESS_TOKEN` | WhatsApp welcome sending | Server-only. Required only when sending is enabled. |
 | `WHATSAPP_VERIFY_TOKEN` | WhatsApp webhook verification | Server-only verification token. |
-| `WHATSAPP_API_VERSION` | Future WhatsApp sending | Meta Graph API version. |
-| `WHATSAPP_WELCOME_TEMPLATE_NAME` | Future WhatsApp sending | Approved template name. |
-| `WHATSAPP_ENABLED` | WhatsApp send feature flag | Must remain `false` until consent and production setup are complete. |
+| `WHATSAPP_WELCOME_TEMPLATE_NAME` | WhatsApp welcome sending | Approved template name, `lumosyn_welcome_message`. |
+| `WHATSAPP_WELCOME_TEMPLATE_LANGUAGE` | WhatsApp welcome sending | Approved template language, `en_US`. |
 | `INTERNAL_ALERTS_ENABLED` | Internal alerts | Optional. Defaults to `false`; set to `true` only after ntfy config is ready. |
 | `INTERNAL_ALERTS_PROVIDER` | Internal alerts | Optional. Currently only `ntfy` is supported. |
 | `NTFY_SERVER_URL` | Internal alerts | Server-side ntfy-compatible base URL. |
@@ -45,10 +46,11 @@ For a clean rebuild, run SQL in this order:
 1. `docs/supabase/module9-customers-assessments.sql`
 2. `docs/supabase/module11-traffic-analytics.sql`
 3. `docs/supabase/module12-whatsapp-consent.sql`
-4. `docs/supabase/module15-lead-assessments-view.sql`
-5. `docs/supabase/module16-appliance-quantities.sql`
-6. `docs/supabase/module19-lead-followup-fields.sql`
-7. `docs/supabase/module21-customer-identity-lead-cleanup.sql`
+4. `docs/supabase/module12b-whatsapp-welcome-message.sql`
+5. `docs/supabase/module15-lead-assessments-view.sql`
+6. `docs/supabase/module16-appliance-quantities.sql`
+7. `docs/supabase/module19-lead-followup-fields.sql`
+8. `docs/supabase/module21-customer-identity-lead-cleanup.sql`
 
 Notes:
 
@@ -75,9 +77,10 @@ Rebuild in this order:
 9. Campaign tracking: UTM sanitizer, clean `/go/[source]` links, landing page/referrer preservation.
 10. Analytics: Vercel Web Analytics and Speed Insights.
 11. WhatsApp consent foundation: server-only client, disabled send flag, webhook verification, inbound reply tracking.
-12. Internal alerts foundation: optional ntfy-compatible alert after successful assessment save, disabled by default.
-13. Customer identity and lead cleanup: phone-first matching, assessment history counts, protected archive/restore actions.
-14. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
+12. WhatsApp welcome message activation: approved template env, Module 12B SQL, consent/status gate, one-welcome-per-customer send guard.
+13. Internal alerts foundation: optional ntfy-compatible alert after successful assessment save, disabled by default.
+14. Customer identity and lead cleanup: phone-first matching, assessment history counts, protected archive/restore actions.
+15. Documentation and compliance layer: architecture map, data inventory, data flow, app store notes, security checklist, rebuild blueprint.
 
 ## Core Business Rules
 
@@ -110,6 +113,10 @@ Rebuild in this order:
 - Tracking values are sanitized before use.
 - UTM tracking is passed through URLs and saved to Supabase; it is not stored in cookies or localStorage.
 - WhatsApp welcome sending must be skipped while `WHATSAPP_ENABLED=false`.
+- WhatsApp welcome sends use the `lumosyn_welcome_message` template with language `en_US`.
+- WhatsApp welcome sends are server-side only and include no private estimate details, budgets, internal notes, follow-up state, or HQ links.
+- A customer-level `whatsapp_welcome_sent_at` timestamp prevents repeated welcome spam by default.
+- Missing WhatsApp config or send failure must not break estimate submission.
 - Inbound WhatsApp replies can update consent/status fields if the webhook is configured.
 
 ## Recommendation Engine Assumptions
@@ -149,7 +156,7 @@ Every recommendation is a starting estimate, not a final system design. Final si
 3. Run schema SQL in the order listed above.
 4. After Module 21 SQL, review duplicate `phone_normalized` diagnostics before any manual merge.
 5. Set server environment variables in Vercel.
-6. Keep `WHATSAPP_ENABLED=false` for production until consent and Meta setup are complete.
+6. Keep `WHATSAPP_ENABLED=false` for production until consent, Module 12B SQL, and Meta setup are complete.
 7. Keep `INTERNAL_ALERTS_ENABLED=false` unless ntfy alerts are ready.
 8. If internal alerts are enabled, set `INTERNAL_ALERTS_PROVIDER`, `NTFY_SERVER_URL`, `NTFY_TOPIC`, optional `NTFY_ACCESS_TOKEN`, and optional `NEXT_PUBLIC_HQ_URL`.
 9. Deploy to Vercel.
@@ -158,7 +165,10 @@ Every recommendation is a starting estimate, not a final system design. Final si
 12. Complete a test estimate and verify `customers` and `assessments` rows.
 13. Verify UTM values on the assessment row.
 14. Verify the WhatsApp webhook GET challenge only after setting `WHATSAPP_VERIFY_TOKEN`.
-15. Do not test real WhatsApp sends in production until the dedicated number, template, and consent process are ready.
+15. Create and approve the Meta template `lumosyn_welcome_message` with language `en_US`.
+16. Add `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_WELCOME_TEMPLATE_NAME`, and `WHATSAPP_WELCOME_TEMPLATE_LANGUAGE` to Vercel.
+17. Enable `WHATSAPP_ENABLED=true` only after the template is approved and SQL is applied.
+18. Submit one test estimate with allowed WhatsApp consent/status and confirm no duplicate welcome spam.
 
 ## Testing Checklist
 
@@ -185,6 +195,9 @@ Every recommendation is a starting estimate, not a final system design. Final si
 - `appliance_quantities` saves beside `appliances` after the Module 16 SQL migration has been applied.
 - `/go/[source]` redirects to homepage with expected UTM values.
 - WhatsApp send remains skipped while `WHATSAPP_ENABLED=false`.
+- Missing WhatsApp config skips safely without breaking estimate save.
+- A mocked WhatsApp welcome request uses template `lumosyn_welcome_message`, language `en_US`, the normalized recipient, and the `{{1}}` name parameter.
+- A repeated estimate for a customer with `whatsapp_welcome_sent_at` skips the welcome send.
 - Internal alerts remain skipped while `INTERNAL_ALERTS_ENABLED=false`.
 - Internal alert payloads do not include full customer names, full WhatsApp numbers, internal notes, exact budgets, or private follow-up details.
 - HQ shows assessment count only for customers with multiple assessments.
@@ -199,5 +212,5 @@ Every recommendation is a starting estimate, not a final system design. Final si
 
 - This rebuild blueprint intentionally describes current behavior, not future product ideas.
 - Do not expose secrets in screenshots, docs, commits, console logs, or frontend code.
-- Do not enable WhatsApp sending as part of a rebuild unless the user explicitly requests production consent setup and confirms readiness.
+- Do not enable WhatsApp sending as part of a rebuild unless the user explicitly requests production consent setup, confirms the Meta template is approved, and confirms the Module 12B SQL has been applied.
 - Keep documentation updated whenever schema, tracking, analytics, or messaging behavior changes.

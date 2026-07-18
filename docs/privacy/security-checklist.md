@@ -45,6 +45,11 @@ This checklist is a technical readiness aid. It is not legal advice.
 - [ ] Webhook POST handling does not reveal internal errors to Meta or the browser.
 - [ ] Opt-in and opt-out replies are recorded accurately.
 - [ ] Opt-out status is respected before any future sending behavior is added.
+- [ ] WhatsApp welcome sending requires `WHATSAPP_ENABLED=true`.
+- [ ] `WHATSAPP_ACCESS_TOKEN` stays only in Vercel/local server env and never in the repo.
+- [ ] No WhatsApp welcome is sent without an allowed customer consent/status field.
+- [ ] WhatsApp welcome failures do not break estimate submission.
+- [ ] WhatsApp welcome content does not include private estimate details, budgets, internal notes, or HQ links.
 
 ## Internal Alerts
 

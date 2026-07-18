@@ -1,25 +1,33 @@
 # WhatsApp Welcome Template
 
-Module 12 uses the WhatsApp Business Platform / Cloud API and sends only an approved template message.
+Module 12B uses the WhatsApp Business Platform / Cloud API and sends only one approved welcome template message.
 
-## Suggested Template Copy
+## Template Name
 
-Hi {{1}} 👋
+```text
+lumosyn_welcome_message
+```
 
-Thanks for using the Lumosyn Energy Planner.
+## Template Language
 
-We hope your estimate gave you a clearer idea of your next energy step.
+```text
+en_US
+```
 
-From time to time, we share practical solar tips and updates about what we're building.
+## Template Copy
 
-Would you like to stay connected?
+```text
+Hi {{1}}, thanks for using Lumosyn.
 
-Reply YES to stay connected or NO to opt out.
+Your energy estimate has been received. Lumosyn helps you understand your backup options before making a decision.
+
+You can reply here if you want help understanding the next step.
+```
 
 ## Template Variables
 
-`{{1}}` = customer first name or name
+`{{1}}` = customer first/display name, or `there` when no safe name exists.
 
 ## Production Note
 
-This template must be created and approved in Meta WhatsApp Manager before production sending.
+This template must be created and approved in Meta WhatsApp Manager before production sending. Keep `WHATSAPP_ENABLED=false` until the template is approved, Module 12B SQL is applied, and production env values are set.

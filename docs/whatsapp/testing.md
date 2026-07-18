@@ -11,15 +11,16 @@ WHATSAPP_ACCESS_TOKEN=
 WHATSAPP_PHONE_NUMBER_ID=
 WHATSAPP_VERIFY_TOKEN=
 WHATSAPP_API_VERSION=v21.0
-WHATSAPP_WELCOME_TEMPLATE_NAME=
+WHATSAPP_WELCOME_TEMPLATE_NAME=lumosyn_welcome_message
+WHATSAPP_WELCOME_TEMPLATE_LANGUAGE=en_US
 WHATSAPP_ENABLED=false
 ```
 
 Do not expose WhatsApp values with `NEXT_PUBLIC_`.
 
-## Paused Production Sending
+## Safe Production Sending Gate
 
-Real WhatsApp sending is paused until Lumosyn gets a dedicated WhatsApp Cloud API number.
+Real WhatsApp sending is blocked unless the feature flag, SQL, Meta template, phone number, access token, and customer consent/status gate are ready.
 
 Current safe status:
 
@@ -28,6 +29,8 @@ WHATSAPP_ENABLED=false
 ```
 
 This means estimates still save, customers still enter a WhatsApp number, no automatic WhatsApp message is sent, and follow-up can happen later after Meta phone number setup is complete.
+
+For Module 12B live-send testing, apply `docs/supabase/module12b-whatsapp-welcome-message.sql`, create the approved `lumosyn_welcome_message` template in Meta with language `en_US`, set Vercel env values, and then enable `WHATSAPP_ENABLED=true`.
 
 ## Webhook Callback URL
 

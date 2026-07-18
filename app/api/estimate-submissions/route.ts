@@ -5,18 +5,14 @@ import { parseTrackingPayload, type TrackingContext } from "@/lib/analytics/utm"
 import { normalizePhoneDigits } from "@/lib/customerIdentity/phone";
 import { mapTimelineToJourneyStage } from "@/lib/recommendation";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import {
-  isWhatsAppEnabled,
-  sendWhatsAppWelcomeTemplate,
-} from "@/lib/whatsapp/client";
+import { sendWelcomeMessage } from "@/lib/whatsapp/sendWelcomeMessage";
 
 const GENERIC_ERROR = "Unable to save estimate right now.";
 const JAMAICAN_WHATSAPP_PATTERN = /^876\d{7}$/;
-const WHATSAPP_OPT_IN_SOURCE = "estimate_submission";
 const APPLIANCE_QUANTITY_MINIMUM = 1;
 const APPLIANCE_QUANTITY_MAXIMUM = 10;
 const CUSTOMER_SELECT =
-  "id, created_at, community_status, email, name, phone_normalized, whatsapp_welcome_sent_at";
+  "id, created_at, community_status, email, name, phone_normalized, whatsapp, whatsapp_welcome_sent_at";
 const PLACEHOLDER_CUSTOMER_NAMES = new Set([
   "customer",
   "lead",
@@ -56,6 +52,7 @@ type CustomerRecord = {
   id: string;
   name: string;
   phone_normalized: string | null;
+  whatsapp: string;
   whatsapp_welcome_sent_at: string | null;
 };
 
@@ -420,51 +417,8 @@ async function createAssessment(
   if (error || !data?.id) {
     throw error ?? new Error("Assessment was not created.");
   }
-}
 
-function shouldSendWhatsAppWelcome(customer: CustomerRecord) {
-  return (
-    isWhatsAppEnabled() &&
-    customer.community_status === "pending" &&
-    !customer.whatsapp_welcome_sent_at
-  );
-}
-
-async function markWhatsAppWelcomeSent(
-  supabase: ReturnType<typeof createSupabaseServiceClient>,
-  customerId: string,
-) {
-  const { error } = await supabase
-    .from("customers")
-    .update({
-      whatsapp_opt_in_source: WHATSAPP_OPT_IN_SOURCE,
-      whatsapp_welcome_sent_at: new Date().toISOString(),
-    })
-    .eq("id", customerId)
-    .is("whatsapp_welcome_sent_at", null);
-
-  if (error) {
-    throw error;
-  }
-}
-
-async function sendWhatsAppWelcomeAfterEstimate(
-  supabase: ReturnType<typeof createSupabaseServiceClient>,
-  customer: CustomerRecord,
-  payload: EstimateSubmissionPayload,
-) {
-  if (!shouldSendWhatsAppWelcome(customer)) {
-    return;
-  }
-
-  const result = await sendWhatsAppWelcomeTemplate({
-    customerName: payload.name,
-    to: payload.whatsapp,
-  });
-
-  if (result.status === "sent") {
-    await markWhatsAppWelcomeSent(supabase, customer.id);
-  }
+  return data.id as string;
 }
 
 export async function POST(request: Request) {
@@ -477,7 +431,7 @@ export async function POST(request: Request) {
 
     const supabase = createSupabaseServiceClient();
     const customer = await resolveCustomer(supabase, payload);
-    await createAssessment(supabase, customer.id, payload);
+    const assessmentId = await createAssessment(supabase, customer.id, payload);
     await sendInternalAlert(
       buildNewLeadAlert({
         applianceQuantities: payload.appliance_quantities,
@@ -487,9 +441,19 @@ export async function POST(request: Request) {
         source: payload.source,
       }),
     ).catch(() => undefined);
-    await sendWhatsAppWelcomeAfterEstimate(supabase, customer, payload).catch(
-      () => undefined,
-    );
+    await sendWelcomeMessage({
+      assessment: {
+        id: assessmentId,
+      },
+      customer: {
+        community_status: customer.community_status,
+        id: customer.id,
+        name: payload.name,
+        whatsapp: payload.whatsapp,
+        whatsapp_welcome_sent_at: customer.whatsapp_welcome_sent_at,
+      },
+      supabase,
+    }).catch(() => undefined);
 
     return NextResponse.json({
       ok: true,

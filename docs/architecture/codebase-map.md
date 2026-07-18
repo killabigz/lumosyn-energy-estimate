@@ -4,7 +4,7 @@ This document maps the current Lumosyn Energy Estimate app so a future developer
 
 ## App Summary
 
-Lumosyn is a Next.js App Router application that helps visitors in Jamaica answer a short solar or backup power questionnaire. The app generates a practical starter recommendation, saves the lead and assessment to Supabase, preserves campaign attribution in the assessment row, and keeps WhatsApp sending paused behind `WHATSAPP_ENABLED=false`.
+Lumosyn is a Next.js App Router application that helps visitors in Jamaica answer a short solar or backup power questionnaire. The app generates a practical starter recommendation, saves the lead and assessment to Supabase, preserves campaign attribution in the assessment row, and keeps WhatsApp welcome sending guarded behind `WHATSAPP_ENABLED=false`.
 
 ## Routes
 
@@ -60,12 +60,14 @@ Lumosyn is a Next.js App Router application that helps visitors in Jamaica answe
 
 | File | Role |
 | --- | --- |
-| `lib/whatsapp/client.ts` | Server-only WhatsApp Cloud API client. Reads private WhatsApp env vars and returns `skipped` unless `WHATSAPP_ENABLED=true`. |
+| `lib/whatsapp/client.ts` | Server-only WhatsApp Cloud API template client. Reads private WhatsApp env vars and returns `skipped` unless `WHATSAPP_ENABLED=true`. |
+| `lib/whatsapp/sendWelcomeMessage.ts` | Server-only Module 12B welcome sender. Checks consent/status, avoids repeat welcomes, records safe audit fields, and calls the WhatsApp client. |
 | `app/api/whatsapp/webhook/route.ts` | Verifies Meta webhook setup and records inbound replies against existing `customers.whatsapp` values. |
 | `docs/whatsapp/testing.md` | Manual webhook and paused-send testing notes. |
 | `docs/whatsapp/welcome-template.md` | Welcome template content/reference. |
+| `docs/whatsapp/welcome-message.md` | Module 12B setup, enablement, testing, privacy, and limitation notes. |
 
-WhatsApp sending is currently paused. `WHATSAPP_ENABLED` must remain `false` until a real consent and production setup is complete.
+WhatsApp welcome sending is enabled only when `WHATSAPP_ENABLED=true`, the Meta template is approved, env config exists, SQL has been applied, and the customer consent/status gate allows it.
 
 ## Analytics And Tracking Files
 
@@ -105,6 +107,7 @@ Do not document or commit actual values.
 | `WHATSAPP_VERIFY_TOKEN` | Server-only secret/config | Token used to verify the Meta webhook callback URL. |
 | `WHATSAPP_API_VERSION` | Server-only config | Meta Graph API version. Defaults to the client default if unset. |
 | `WHATSAPP_WELCOME_TEMPLATE_NAME` | Server-only config | Approved WhatsApp template name for welcome messages. |
+| `WHATSAPP_WELCOME_TEMPLATE_LANGUAGE` | Server-only config | Approved WhatsApp template language for welcome messages. |
 | `WHATSAPP_ENABLED` | Server-only feature flag | Must remain `false` until production WhatsApp consent and setup are complete. When false, sends are skipped. |
 | `NODE_ENV` | Build/runtime provided by framework | Used by `next-pwa` configuration to disable PWA behavior in development. |
 
@@ -140,6 +143,6 @@ After generating the recommendation, the client POSTs the completed payload to `
 
 UTM/source/landing/referrer values are sanitized and included in the same API payload. They are saved on the `assessments` row, not in cookies or localStorage. The estimate page removes tracking params from the visible browser URL after loading.
 
-### WhatsApp Consent Is Currently Paused
+### WhatsApp Welcome Gate
 
-The save route can call the WhatsApp welcome client only when `WHATSAPP_ENABLED=true`, the customer is still `pending`, and no welcome timestamp exists. Current safe production behavior is `WHATSAPP_ENABLED=false`, so estimates still save but no automatic WhatsApp message is sent. The webhook can still record inbound replies if Meta sends them, but production sending should remain paused until real consent and phone number setup are complete.
+The save route calls the Module 12B welcome sender after the customer and assessment rows save. The sender only sends when `WHATSAPP_ENABLED=true`, required WhatsApp config exists, the customer has an allowed consent/status value, and no customer-level welcome timestamp exists. Current safe production behavior remains `WHATSAPP_ENABLED=false`, so estimates still save while WhatsApp skips. The webhook can still record inbound replies if Meta sends them.

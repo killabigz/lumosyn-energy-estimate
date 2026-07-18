@@ -1,7 +1,8 @@
 import "server-only";
 
 const DEFAULT_API_VERSION = "v21.0";
-const WELCOME_LANGUAGE_CODE = "en";
+const DEFAULT_WELCOME_TEMPLATE_LANGUAGE = "en_US";
+const FALLBACK_TEMPLATE_CUSTOMER_NAME = "there";
 
 type RequiredConfigName =
   | "WHATSAPP_ACCESS_TOKEN"
@@ -12,10 +13,11 @@ type WhatsAppConfig = {
   accessToken: string;
   apiVersion: string;
   phoneNumberId: string;
+  welcomeTemplateLanguage: string;
   welcomeTemplateName: string;
 };
 
-export type WhatsAppWelcomeResult =
+export type WhatsAppWelcomeTemplateResult =
   | {
       ok: true;
       status: "sent";
@@ -24,18 +26,18 @@ export type WhatsAppWelcomeResult =
   | {
       ok: true;
       status: "skipped";
-      reason: "disabled";
+      reason: "disabled" | "invalid_recipient" | "missing_config";
+      missingConfig?: RequiredConfigName[];
     }
   | {
       ok: false;
       status: "failed";
-      reason: "invalid_recipient" | "meta_api_error" | "missing_config" | "network_error";
-      missingConfig?: RequiredConfigName[];
+      reason: "meta_api_error" | "network_error";
       statusCode?: number;
     };
 
 type WelcomeTemplateInput = {
-  customerName: string;
+  customerName?: string | null;
   to: string;
 };
 
@@ -45,6 +47,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getServerEnv(name: string) {
   return process.env[name]?.trim() ?? "";
+}
+
+function warnWhatsApp(message: string) {
+  console.warn(`[WhatsApp] ${message}`);
 }
 
 function readWhatsAppConfig():
@@ -80,6 +86,9 @@ function readWhatsAppConfig():
       accessToken,
       apiVersion: getServerEnv("WHATSAPP_API_VERSION") || DEFAULT_API_VERSION,
       phoneNumberId,
+      welcomeTemplateLanguage:
+        getServerEnv("WHATSAPP_WELCOME_TEMPLATE_LANGUAGE") ||
+        DEFAULT_WELCOME_TEMPLATE_LANGUAGE,
       welcomeTemplateName,
     },
   };
@@ -103,10 +112,11 @@ export function normalizeWhatsAppRecipientNumber(value: string) {
   return undefined;
 }
 
-function getTemplateCustomerName(name: string) {
-  const trimmedName = name.trim();
+function getTemplateCustomerName(name: string | null | undefined) {
+  const trimmedName = name?.trim() ?? "";
+  const firstName = trimmedName.split(/\s+/)[0]?.replace(/[<>]/g, "") ?? "";
 
-  return trimmedName.split(/\s+/)[0] || trimmedName;
+  return firstName || FALLBACK_TEMPLATE_CUSTOMER_NAME;
 }
 
 function extractMessageId(payload: unknown) {
@@ -126,7 +136,7 @@ function extractMessageId(payload: unknown) {
 export async function sendWhatsAppWelcomeTemplate({
   customerName,
   to,
-}: WelcomeTemplateInput): Promise<WhatsAppWelcomeResult> {
+}: WelcomeTemplateInput): Promise<WhatsAppWelcomeTemplateResult> {
   if (!isWhatsAppEnabled()) {
     return {
       ok: true,
@@ -138,11 +148,13 @@ export async function sendWhatsAppWelcomeTemplate({
   const configResult = readWhatsAppConfig();
 
   if (!configResult.ok) {
+    warnWhatsApp("Welcome message skipped because required config is missing.");
+
     return {
-      ok: false,
+      ok: true,
       missingConfig: configResult.missingConfig,
       reason: "missing_config",
-      status: "failed",
+      status: "skipped",
     };
   }
 
@@ -150,14 +162,19 @@ export async function sendWhatsAppWelcomeTemplate({
 
   if (!recipient) {
     return {
-      ok: false,
+      ok: true,
       reason: "invalid_recipient",
-      status: "failed",
+      status: "skipped",
     };
   }
 
-  const { accessToken, apiVersion, phoneNumberId, welcomeTemplateName } =
-    configResult.config;
+  const {
+    accessToken,
+    apiVersion,
+    phoneNumberId,
+    welcomeTemplateLanguage,
+    welcomeTemplateName,
+  } = configResult.config;
 
   try {
     const response = await fetch(
@@ -165,6 +182,7 @@ export async function sendWhatsAppWelcomeTemplate({
       {
         body: JSON.stringify({
           messaging_product: "whatsapp",
+          recipient_type: "individual",
           template: {
             components: [
               {
@@ -178,7 +196,7 @@ export async function sendWhatsAppWelcomeTemplate({
               },
             ],
             language: {
-              code: WELCOME_LANGUAGE_CODE,
+              code: welcomeTemplateLanguage,
             },
             name: welcomeTemplateName,
           },
@@ -194,6 +212,10 @@ export async function sendWhatsAppWelcomeTemplate({
     );
 
     if (!response.ok) {
+      warnWhatsApp(
+        `Welcome message failed because Meta returned HTTP ${response.status}.`,
+      );
+
       return {
         ok: false,
         reason: "meta_api_error",
@@ -208,6 +230,10 @@ export async function sendWhatsAppWelcomeTemplate({
       status: "sent",
     };
   } catch {
+    warnWhatsApp(
+      "Welcome message failed because the Meta request did not complete.",
+    );
+
     return {
       ok: false,
       reason: "network_error",

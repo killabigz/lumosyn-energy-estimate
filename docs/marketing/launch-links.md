@@ -1,6 +1,6 @@
 # Lumosyn Launch Links
 
-Use these clean links while the custom domain and real WhatsApp Cloud API phone number are paused. Each link sends people to the Lumosyn homepage first so they see the first screen before starting the estimate questions.
+Use these clean links while the custom domain and WhatsApp welcome send gate remain disabled by default. Each link sends people to the Lumosyn homepage first so they see the first screen before starting the estimate questions.
 
 Production base URL:
 
@@ -83,9 +83,9 @@ order by a.created_at desc
 limit 10;
 ```
 
-## WhatsApp Paused Status
+## WhatsApp Welcome Status
 
-Real WhatsApp sending is paused until Lumosyn gets a dedicated WhatsApp Cloud API number.
+Real WhatsApp welcome sending remains blocked unless the feature flag, Meta template, SQL, env values, and consent/status gate are ready.
 
 Current safe status:
 
@@ -97,5 +97,5 @@ This means:
 
 - Estimates still save.
 - Customers still enter a WhatsApp number.
-- No automatic WhatsApp message is sent.
-- Follow-up can happen later after Meta phone number setup is complete.
+- No automatic WhatsApp welcome message is sent while `WHATSAPP_ENABLED=false`.
+- Follow-up can happen later after Meta phone number setup and Module 12B readiness are complete.

@@ -27,6 +27,16 @@ or lead data.
 
 ## Completed Module Notes
 
+### Module 12B: WhatsApp Welcome Message Activation
+
+- [x] Sends only the consent-based `lumosyn_welcome_message` template after a successful estimate save.
+- [x] Adds customer-level welcome audit fields through `docs/supabase/module12b-whatsapp-welcome-message.sql`.
+- [x] No public lead API added.
+- [x] No client-side customer data read/write added.
+- [x] No private customer details, recommendation details, budget, internal note, follow-up status, or HQ link sent in the welcome message.
+- [x] WhatsApp token and send logic remain server-side only.
+- [x] Sending is blocked unless `WHATSAPP_ENABLED=true`, config exists, consent/status is allowed, and no previous welcome timestamp exists.
+
 ### Module 16: Appliance Quantities
 
 - [x] Touches assessment data by adding `assessments.appliance_quantities`.
